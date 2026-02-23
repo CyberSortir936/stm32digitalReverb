@@ -21,6 +21,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "stm32f4xx_ll_bus.h"
+#include "stm32f4xx_ll_gpio.h"
+#include "stm32f4xx_ll_dma.h"
 #include "stm32f4xx_ll_spi.h"
 /* USER CODE END Includes */
 
@@ -45,20 +48,10 @@ DMA_HandleTypeDef hdma_i2s3_ext_rx;
 DMA_HandleTypeDef hdma_spi3_tx;
 
 /* USER CODE BEGIN PV */
-#define SINE_SAMPLES 48
-// Таблиця синуса на 48 точок (для 48кГц дискретизації це дасть рівно 1кГц тон)
-const uint16_t sine_table[48] = {
-    0x8000, 0x9090, 0xa090, 0xb000, 0xbe00, 0xcb00, 0xd600, 0xe000, 0xe800, 0xef00, 0xf500, 0xf900,
-    0xfb00, 0xfd00, 0xfe00, 0xff00, 0xfe00, 0xfd00, 0xfb00, 0xf900, 0xf500, 0xef00, 0xe800, 0xe000,
-    0xd600, 0xcb00, 0xbe00, 0xb000, 0xa090, 0x9090, 0x8000, 0x6f6f, 0x5f6f, 0x5000, 0x41ff, 0x34ff,
-    0x29ff, 0x1fff, 0x17ff, 0x10ff, 0x0aff, 0x06ff, 0x04ff, 0x02ff, 0x01ff, 0x00ff, 0x01ff, 0x02ff
-};
-uint8_t sine_idx = 0;
-
-uint32_t led_counter = 0;
-// Створюємо просту "пилку" на 48 семплів (при 48кГц це буде тон 1кГц)
-// Для 24-бітного формату кожен семпл — це два uint16_t (High + Low)
-uint16_t tone_buffer[SINE_SAMPLES * 2];
+// Буфери для DMA (Подвійна буферизація / Ping-Pong)
+#define AUDIO_BUF_SIZE 512
+uint16_t rx_buf[AUDIO_BUF_SIZE];
+uint16_t tx_buf[AUDIO_BUF_SIZE];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -84,17 +77,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  HAL_Init();
-  
-  // Налаштуй PC13 на вихід тут прямо зараз (якщо ще не налаштовано)
-  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOC);
-  LL_GPIO_SetPinMode(GPIOC, LL_GPIO_PIN_13, LL_GPIO_MODE_OUTPUT);
 
-  // Спробуй блимнути 5 разів швидко
-  for(int i=0; i<10; i++) {
-      LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_13);
-      for(int d=0; d<200000; d++); // тупа затримка
-  }
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -121,63 +104,80 @@ int main(void)
   MX_DMA_Init();
   MX_I2S3_Init();
   /* USER CODE BEGIN 2 */
-  // 1. Примусово вмикаємо тактування шини (про всяк випадок)
+
+  /* Обов'язково вмикаємо тактування SPI3 для роботи LL функцій */
   LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_SPI3);
 
-  // 2. Примусово вмикаємо модуль I2S
+  /* Вимикаємо переривання DMA в NVIC, щоб HAL не скидав прапорці HT/TC замість нас */
+  HAL_NVIC_DisableIRQ(DMA1_Stream0_IRQn);
+  HAL_NVIC_DisableIRQ(DMA1_Stream5_IRQn);
+
+  /* --- Знімаємо живлення з I2S перед налаштуванням --- */
+  LL_I2S_Disable(SPI3);
+  LL_I2S_Disable(I2S3ext);
+
+  /* --- Налаштування DMA для прийому (RX - Stream 0) --- */
+  LL_DMA_SetDataLength(DMA1, LL_DMA_STREAM_0, AUDIO_BUF_SIZE);
+  LL_DMA_ConfigAddresses(DMA1, LL_DMA_STREAM_0, 
+                         (uint32_t)&I2S3ext->DR, 
+                         (uint32_t)rx_buf, 
+                         LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
+
+  /* --- Налаштування DMA для передачі (TX - Stream 5) --- */
+  LL_DMA_SetDataLength(DMA1, LL_DMA_STREAM_5, AUDIO_BUF_SIZE);
+  LL_DMA_ConfigAddresses(DMA1, LL_DMA_STREAM_5, 
+                         (uint32_t)tx_buf, 
+                         (uint32_t)&SPI3->DR, 
+                         LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
+
+  /* Дозволяємо I2S генерувати запити до DMA */
+  LL_I2S_EnableDMAReq_RX(I2S3ext);
+  LL_I2S_EnableDMAReq_TX(SPI3);
+
+  /* Вмикаємо потоки DMA */
+  LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_0);
+  LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_5);
+
+  /* Вмикаємо I2S (ПОРЯДОК ВАЖЛИВИЙ: Спочатку приймач, потім майстер-передавач) */
+  LL_I2S_Enable(I2S3ext);
   LL_I2S_Enable(SPI3);
 
-  // Заповнюємо буфер "пилкою"
-  for(int i = 0; i < SINE_SAMPLES; i++) {
-      uint32_t val = (i * 0xFFFFFF) / SINE_SAMPLES; // 24-бітне значення
-      tone_buffer[i*2]     = (uint16_t)(val >> 16); // High 16 bits
-      tone_buffer[i*2 + 1] = (uint16_t)(val & 0xFFFF); // Low 16 bits
-  }
-
-  // PA15 -> AF6, PB3 -> AF6, PB5 -> AF6
-  LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_15, LL_GPIO_MODE_ALTERNATE);
-  LL_GPIO_SetAFPin_8_15(GPIOA, LL_GPIO_PIN_15, LL_GPIO_AF_6);
-
-  LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_3, LL_GPIO_MODE_ALTERNATE);
-  LL_GPIO_SetAFPin_0_7(GPIOB, LL_GPIO_PIN_3, LL_GPIO_AF_6);
-
-  LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_5, LL_GPIO_MODE_ALTERNATE);
-  LL_GPIO_SetAFPin_0_7(GPIOB, LL_GPIO_PIN_5, LL_GPIO_AF_6);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    if (LL_I2S_IsActiveFlag_TXE(SPI3)) 
+    // 1. Блималка для контролю роботи (Heartbeat)
+    static uint32_t heartbeat = 0;
+    if (++heartbeat >= 500000) {  
+        LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_13);
+        heartbeat = 0;
+    }
+
+    // 2. Перевіряємо, чи DMA заповнив ПЕРШУ половину буфера RX (Half Transfer)
+    if (LL_DMA_IsActiveFlag_HT0(DMA1))
     {
-        // Отримуємо значення з таблиці (воно 16-бітне)
-        uint16_t sample = sine_table[sine_idx];
-
-        // --- ЛІВИЙ КАНАЛ ---
-        // Передаємо старші 16 біт (наша синусоїда)
-        LL_I2S_TransmitData16(SPI3, sample);
-        while (!LL_I2S_IsActiveFlag_TXE(SPI3));
-        // Передаємо молодші біти (просто 0 для 24-бітного режиму)
-        LL_I2S_TransmitData16(SPI3, 0x0000);
-        while (!LL_I2S_IsActiveFlag_TXE(SPI3));
-
-        // --- ПРАВИЙ КАНАЛ ---
-        LL_I2S_TransmitData16(SPI3, sample);
-        while (!LL_I2S_IsActiveFlag_TXE(SPI3));
-        LL_I2S_TransmitData16(SPI3, 0x0000);
-
-        sine_idx++;
-        if (sine_idx >= SINE_SAMPLES) sine_idx = 0;
-
-        // Дебаг LED (блимає раз на секунду при 48кГц)
-        led_counter++;
-        if (led_counter >= 48000) {
-            LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_13);
-            led_counter = 0;
+        LL_DMA_ClearFlag_HT0(DMA1); // Скидаємо прапорець
+        
+        // Копіюємо першу половину (тут згодом буде твій алгоритм DSP)
+        for (uint32_t i = 0; i < (AUDIO_BUF_SIZE / 2); i++) {
+            tx_buf[i] = rx_buf[i];
         }
+    }
+
+    // 3. Перевіряємо, чи DMA заповнив ДРУГУ половину буфера RX (Transfer Complete)
+    if (LL_DMA_IsActiveFlag_TC0(DMA1))
+    {
+        LL_DMA_ClearFlag_TC0(DMA1); // Скидаємо прапорець
+        
+        // Копіюємо другу половину (тут згодом буде твій алгоритм DSP)
+        for (uint32_t i = (AUDIO_BUF_SIZE / 2); i < AUDIO_BUF_SIZE; i++) {
+            tx_buf[i] = rx_buf[i];
+        }
+    }
     /* USER CODE END WHILE */
-      }
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -321,13 +321,7 @@ static void MX_GPIO_Init(void)
 {
   LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
   /* USER CODE BEGIN MX_GPIO_Init_1 */
-  // Увімкни тактування порту C
-  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOC);
 
-  // Налаштуй PC13 як вихід (Output)
-  LL_GPIO_SetPinMode(GPIOC, LL_GPIO_PIN_13, LL_GPIO_MODE_OUTPUT);
-  LL_GPIO_SetPinSpeed(GPIOC, LL_GPIO_PIN_13, LL_GPIO_SPEED_FREQ_LOW);
-  LL_GPIO_SetPinOutputType(GPIOC, LL_GPIO_PIN_13, LL_GPIO_OUTPUT_PUSHPULL);
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
@@ -354,6 +348,12 @@ static void MX_GPIO_Init(void)
   LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
+  
+  /* Ініціалізація світлодіода на PC13, яку стер CubeMX */
+  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOC);
+  LL_GPIO_SetPinMode(GPIOC, LL_GPIO_PIN_13, LL_GPIO_MODE_OUTPUT);
+  LL_GPIO_SetPinSpeed(GPIOC, LL_GPIO_PIN_13, LL_GPIO_SPEED_FREQ_LOW);
+  LL_GPIO_SetPinOutputType(GPIOC, LL_GPIO_PIN_13, LL_GPIO_OUTPUT_PUSHPULL);
 
   /* USER CODE END MX_GPIO_Init_2 */
 }
@@ -379,7 +379,7 @@ void Error_Handler(void)
 #ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
+  * where the assert_param error has occurred.
   * @param  file: pointer to the source file name
   * @param  line: assert_param error line source number
   * @retval None
