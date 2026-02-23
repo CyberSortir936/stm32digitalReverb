@@ -60,6 +60,11 @@ void PeriphCommonClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_I2S3_Init(void);
+
+// --- ЗМІННІ ДЛЯ ДІЛЕЮ ---
+#define DELAY_SIZE 26500 // 24000 семплів = 0.5 секунди затримки при 48 кГц
+int16_t delay_line[DELAY_SIZE];
+uint32_t delay_idx = 0;
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -148,32 +153,72 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    // 1. Блималка для контролю роботи (Heartbeat)
+    // Блималка (Heartbeat)
     static uint32_t heartbeat = 0;
     if (++heartbeat >= 500000) {  
         LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_13);
         heartbeat = 0;
     }
 
-    // 2. Перевіряємо, чи DMA заповнив ПЕРШУ половину буфера RX (Half Transfer)
+    // --- ОБРОБКА ПЕРШОЇ ПОЛОВИНИ БУФЕРА ---
     if (LL_DMA_IsActiveFlag_HT0(DMA1))
     {
-        LL_DMA_ClearFlag_HT0(DMA1); // Скидаємо прапорець
+        LL_DMA_ClearFlag_HT0(DMA1); 
         
-        // Копіюємо першу половину (тут згодом буде твій алгоритм DSP)
-        for (uint32_t i = 0; i < (AUDIO_BUF_SIZE / 2); i++) {
-            tx_buf[i] = rx_buf[i];
+        // Крокуємо по 4 слова (Лівий MSB, Лівий LSB, Правий MSB, Правий LSB)
+        for (uint32_t i = 0; i < (AUDIO_BUF_SIZE / 2); i += 4) {
+            
+            // 1. Читаємо вхідний сигнал (беремо лише старші 16 біт) і переводимо у знакове число
+            int16_t dry_sample = (int16_t)rx_buf[i];
+
+            // 2. Читаємо семпл з лінії затримки (те, що ми зіграли пів секунди тому)
+            int16_t wet_sample = delay_line[delay_idx];
+
+            // 3. Мікшуємо вихідний сигнал: 50% чистого звуку + 50% відлуння
+            // (Ділимо на 2 за допомогою побітового зсуву або звичайного ділення, щоб не було перевантаження/хрипу)
+            int16_t out_sample = (dry_sample / 2) + (wet_sample / 2);
+
+            // 4. Фідбек (Feedback): записуємо в буфер ділею свіжий звук + трохи старого, щоб він затухав
+            delay_line[delay_idx] = dry_sample + (wet_sample / 2); 
+
+            // 5. Рухаємо "головку запису/читання" по колу
+            delay_idx++;
+            if (delay_idx >= DELAY_SIZE) {
+                delay_idx = 0;
+            }
+
+            // 6. Записуємо результат в буфер передачі на ЦАП (робимо стерео з моно)
+            tx_buf[i]   = (uint16_t)out_sample; // Лівий канал MSB
+            tx_buf[i+1] = 0;                    // Лівий канал LSB (просто зануляємо молодші біти)
+            
+            tx_buf[i+2] = (uint16_t)out_sample; // Правий канал MSB
+            tx_buf[i+3] = 0;                    // Правий канал LSB
         }
     }
 
-    // 3. Перевіряємо, чи DMA заповнив ДРУГУ половину буфера RX (Transfer Complete)
+    // --- ОБРОБКА ДРУГОЇ ПОЛОВИНИ БУФЕРА ---
     if (LL_DMA_IsActiveFlag_TC0(DMA1))
     {
-        LL_DMA_ClearFlag_TC0(DMA1); // Скидаємо прапорець
+        LL_DMA_ClearFlag_TC0(DMA1); 
         
-        // Копіюємо другу половину (тут згодом буде твій алгоритм DSP)
-        for (uint32_t i = (AUDIO_BUF_SIZE / 2); i < AUDIO_BUF_SIZE; i++) {
-            tx_buf[i] = rx_buf[i];
+        for (uint32_t i = (AUDIO_BUF_SIZE / 2); i < AUDIO_BUF_SIZE; i += 4) {
+            
+            // Робимо абсолютно те саме для другої половини масиву
+            int16_t dry_sample = (int16_t)rx_buf[i];
+            int16_t wet_sample = delay_line[delay_idx];
+
+            int16_t out_sample = (dry_sample / 2) + (wet_sample / 2);
+            delay_line[delay_idx] = dry_sample + (wet_sample / 2); 
+
+            delay_idx++;
+            if (delay_idx >= DELAY_SIZE) {
+                delay_idx = 0;
+            }
+
+            tx_buf[i]   = (uint16_t)out_sample;
+            tx_buf[i+1] = 0; 
+            tx_buf[i+2] = (uint16_t)out_sample;
+            tx_buf[i+3] = 0; 
         }
     }
     /* USER CODE END WHILE */
