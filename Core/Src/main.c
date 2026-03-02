@@ -29,7 +29,20 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+// Структура, що зберігає стан одного Комб-фільтра
+typedef struct {
+    int16_t *buffer;    // Вказівник на фізичний масив пам'яті (лінію затримки)
+    uint32_t size;      // Довжина масиву (взаємно просте число)
+    uint32_t idx;       // Поточна "головка" запису/читання
+    int32_t feedback;   // Коефіцієнт загасання (у форматі Q15: від 0 до 32767)
+} CombFilter;
 
+typedef struct {
+    int16_t *buffer;
+    uint32_t size;
+    uint32_t idx;
+    int32_t feedback; // Коефіцієнт (Q15)
+} AllPassFilter;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -52,6 +65,20 @@ DMA_HandleTypeDef hdma_spi3_tx;
 #define AUDIO_BUF_SIZE 512
 uint16_t rx_buf[AUDIO_BUF_SIZE];
 uint16_t tx_buf[AUDIO_BUF_SIZE];
+
+int16_t comb1_buf[1433];
+int16_t comb2_buf[1601];
+int16_t comb3_buf[1867];
+int16_t comb4_buf[2053];
+
+CombFilter comb1, comb2, comb3, comb4;
+
+// Пам'ять для 2 послідовних All-Pass фільтрів (теж взаємно прості числа)
+int16_t ap1_buf[227]; // ~4.7 мс
+int16_t ap2_buf[347]; // ~7.2 мс
+
+// Об'єкти фільтрів
+AllPassFilter ap1, ap2;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,7 +98,84 @@ uint32_t delay_idx = 0;
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+// Функція для налаштування фільтра при старті (прив'язуємо масив до структури)
+void Comb_Init(CombFilter *comb, int16_t *buf, uint32_t sz, int32_t fb) {
+    comb->buffer = buf;
+    comb->size = sz;
+    comb->idx = 0;
+    comb->feedback = fb;
+    
+    // Очищаємо пам'ять від можливого сміття (тиша)
+    for(uint32_t i = 0; i < sz; i++) {
+        comb->buffer[i] = 0; 
+    }
+}
 
+// Ініціалізація All-Pass фільтра
+void AllPass_Init(AllPassFilter *ap, int16_t *buf, uint32_t sz, int32_t fb) {
+    ap->buffer = buf;
+    ap->size = sz;
+    ap->idx = 0;
+    ap->feedback = fb;
+    for(uint32_t i = 0; i < sz; i++) {
+        ap->buffer[i] = 0; 
+    }
+}
+
+// Обробка одного семплу через All-Pass
+int16_t AllPass_Process(AllPassFilter *ap, int16_t input) {
+    // 1. Читаємо старий семпл з буфера
+    int16_t bufout = ap->buffer[ap->idx];
+    
+    // 2. Рахуємо вихідний сигнал (Формула: відлуння - (вхід * фідбек))
+    int32_t out32 = bufout - ((input * ap->feedback) >> 15);
+    
+    // 3. Рахуємо нове значення для пам'яті (Формула: вхід + (відлуння * фідбек))
+    int32_t bufnew32 = input + ((bufout * ap->feedback) >> 15);
+    
+    // 4. Захист від переповнення (Кліппінг) для пам'яті
+    if(bufnew32 > 32767) bufnew32 = 32767;
+    else if(bufnew32 < -32768) bufnew32 = -32768;
+    
+    // 5. Записуємо в буфер і рухаємо головку
+    ap->buffer[ap->idx] = (int16_t)bufnew32;
+    ap->idx++;
+    if (ap->idx >= ap->size) ap->idx = 0;
+    
+    // 6. Захист від переповнення для виходу
+    if(out32 > 32767) out32 = 32767;
+    else if(out32 < -32768) out32 = -32768;
+    
+    return (int16_t)out32;
+}
+// Універсальна функція обробки ОДНОГО семплу для БУДЬ-ЯКОГО комб-фільтра
+int16_t Comb_Process(CombFilter *comb, int16_t input) {
+    // 1. Читаємо старий семпл (відлуння) з буфера
+    int16_t out_sample = comb->buffer[comb->idx];
+
+    // 2. Рахуємо нове значення для запису: Вхід + (Відлуння * Фідбек)
+    // Оскільки feedback у нас у Q15 (максимум 32767 = 0.999), 
+    // після множення робимо зсув вправо на 15, щоб поділити на 32768.
+    int32_t new_val = input + ((out_sample * comb->feedback) >> 15);
+
+    // 3. ЗАХИСТ ВІД ПЕРЕПОВНЕННЯ (Clipping)
+    // IIR-фільтри можуть легко вийти за межі 16 біт при резонансі. 
+    // Жорстко обмежуємо сигнал, щоб не було цифрового вереску.
+    if (new_val > 32767) new_val = 32767;
+    else if (new_val < -32768) new_val = -32768;
+
+    // 4. Записуємо нове значення на "стрічку"
+    comb->buffer[comb->idx] = (int16_t)new_val;
+
+    // 5. Рухаємо головку
+    comb->idx++;
+    if (comb->idx >= comb->size) {
+        comb->idx = 0;
+    }
+
+    // Повертаємо тільки відлуння (бо за Шредером ми сумуємо саме відлуння)
+    return out_sample;
+}
 /* USER CODE END 0 */
 
 /**
@@ -147,6 +251,15 @@ int main(void)
   LL_I2S_Enable(I2S3ext);
   LL_I2S_Enable(SPI3);
 
+
+  Comb_Init(&comb1, comb1_buf, 1433, 28000);
+  Comb_Init(&comb2, comb2_buf, 1601, 28000);
+  Comb_Init(&comb3, comb3_buf, 1867, 28000);
+  Comb_Init(&comb4, comb4_buf, 2053, 28000);
+
+  // Ініціалізація розсіювачів
+  AllPass_Init(&ap1, ap1_buf, 227, 22937);
+  AllPass_Init(&ap2, ap2_buf, 347, 22937);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -168,31 +281,34 @@ int main(void)
         // Крокуємо по 4 слова (Лівий MSB, Лівий LSB, Правий MSB, Правий LSB)
         for (uint32_t i = 0; i < (AUDIO_BUF_SIZE / 2); i += 4) {
             
-            // 1. Читаємо вхідний сигнал (беремо лише старші 16 біт) і переводимо у знакове число
-            int16_t dry_sample = (int16_t)rx_buf[i];
+          int16_t dry_sample = (int16_t)rx_buf[i];
 
-            // 2. Читаємо семпл з лінії затримки (те, що ми зіграли пів секунди тому)
-            int16_t wet_sample = delay_line[delay_idx];
+        // 1. Ослабляємо вхід, щоб сума чотирьох комб-фільтрів не розірвала динамік
+        int16_t input_attenuated = dry_sample / 4;
 
-            // 3. Мікшуємо вихідний сигнал: 50% чистого звуку + 50% відлуння
-            // (Ділимо на 2 за допомогою побітового зсуву або звичайного ділення, щоб не було перевантаження/хрипу)
-            int16_t out_sample = (dry_sample / 2) + (wet_sample / 2);
+        // 2. Паралельний блок (тіло реверберації)
+        int32_t reverb_mix = 0;
+        reverb_mix += Comb_Process(&comb1, input_attenuated);
+        reverb_mix += Comb_Process(&comb2, input_attenuated);
+        reverb_mix += Comb_Process(&comb3, input_attenuated);
+        reverb_mix += Comb_Process(&comb4, input_attenuated);
 
-            // 4. Фідбек (Feedback): записуємо в буфер ділею свіжий звук + трохи старого, щоб він затухав
-            delay_line[delay_idx] = dry_sample + (wet_sample / 2); 
+        // Переводимо суму назад у 16 біт
+        int16_t wet_signal = (int16_t)reverb_mix;
 
-            // 5. Рухаємо "головку запису/читання" по колу
-            delay_idx++;
-            if (delay_idx >= DELAY_SIZE) {
-                delay_idx = 0;
-            }
+        // 3. Послідовний блок (розмазування/дифузія)
+        // Пропускаємо суму через перший All-Pass, а потім результат - через другий
+        wet_signal = AllPass_Process(&ap1, wet_signal);
+        wet_signal = AllPass_Process(&ap2, wet_signal);
 
-            // 6. Записуємо результат в буфер передачі на ЦАП (робимо стерео з моно)
-            tx_buf[i]   = (uint16_t)out_sample; // Лівий канал MSB
-            tx_buf[i+1] = 0;                    // Лівий канал LSB (просто зануляємо молодші біти)
-            
-            tx_buf[i+2] = (uint16_t)out_sample; // Правий канал MSB
-            tx_buf[i+3] = 0;                    // Правий канал LSB
+        // 4. Фінальний мікс: чиста гітара + розмазана реверберація
+        int16_t out_sample = (dry_sample / 2) + (wet_signal / 2);
+
+        // 5. Відправляємо на ЦАП
+        tx_buf[i]   = (uint16_t)out_sample; 
+        tx_buf[i+1] = 0;                    
+        tx_buf[i+2] = (uint16_t)out_sample; 
+        tx_buf[i+3] = 0;
         }
     }
 
@@ -203,22 +319,34 @@ int main(void)
         
         for (uint32_t i = (AUDIO_BUF_SIZE / 2); i < AUDIO_BUF_SIZE; i += 4) {
             
-            // Робимо абсолютно те саме для другої половини масиву
             int16_t dry_sample = (int16_t)rx_buf[i];
-            int16_t wet_sample = delay_line[delay_idx];
 
-            int16_t out_sample = (dry_sample / 2) + (wet_sample / 2);
-            delay_line[delay_idx] = dry_sample + (wet_sample / 2); 
+        // 1. Ослабляємо вхід, щоб сума чотирьох комб-фільтрів не розірвала динамік
+        int16_t input_attenuated = dry_sample / 4;
 
-            delay_idx++;
-            if (delay_idx >= DELAY_SIZE) {
-                delay_idx = 0;
-            }
+        // 2. Паралельний блок (тіло реверберації)
+        int32_t reverb_mix = 0;
+        reverb_mix += Comb_Process(&comb1, input_attenuated);
+        reverb_mix += Comb_Process(&comb2, input_attenuated);
+        reverb_mix += Comb_Process(&comb3, input_attenuated);
+        reverb_mix += Comb_Process(&comb4, input_attenuated);
 
-            tx_buf[i]   = (uint16_t)out_sample;
-            tx_buf[i+1] = 0; 
-            tx_buf[i+2] = (uint16_t)out_sample;
-            tx_buf[i+3] = 0; 
+        // Переводимо суму назад у 16 біт
+        int16_t wet_signal = (int16_t)reverb_mix;
+
+        // 3. Послідовний блок (розмазування/дифузія)
+        // Пропускаємо суму через перший All-Pass, а потім результат - через другий
+        wet_signal = AllPass_Process(&ap1, wet_signal);
+        wet_signal = AllPass_Process(&ap2, wet_signal);
+
+        // 4. Фінальний мікс: чиста гітара + розмазана реверберація
+        int16_t out_sample = (dry_sample / 2) + (wet_signal / 2);
+
+        // 5. Відправляємо на ЦАП
+        tx_buf[i]   = (uint16_t)out_sample; 
+        tx_buf[i+1] = 0;                    
+        tx_buf[i+2] = (uint16_t)out_sample; 
+        tx_buf[i+3] = 0;
         }
     }
     /* USER CODE END WHILE */
