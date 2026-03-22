@@ -4,16 +4,6 @@
   * @file           : main.c
   * @brief          : Main program body
   ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2026 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
@@ -29,51 +19,37 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-// Структура, що зберігає стан одного Комб-фільтра
 typedef struct {
-    int16_t *buffer;    // Вказівник на фізичний масив пам'яті (лінію затримки)
-    uint32_t size;      // Довжина масиву (взаємно просте число)
-    uint32_t idx;       // Поточна "головка" запису/читання
-    int32_t feedback;   // Коефіцієнт загасання (у форматі Q15: від 0 до 32767)
+    int16_t *buffer;
+    uint32_t size;
+    uint32_t idx;
+    int32_t feedback;
 } CombFilter;
 
 typedef struct {
     int16_t *buffer;
     uint32_t size;
     uint32_t idx;
-    int32_t feedback; // Коефіцієнт (Q15)
+    int32_t feedback;
 } AllPassFilter;
 /* USER CODE END PTD */
 
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+DMA_HandleTypeDef hdma_adc1;
 
 I2S_HandleTypeDef hi2s3;
 DMA_HandleTypeDef hdma_i2s3_ext_rx;
 DMA_HandleTypeDef hdma_spi3_tx;
 
 /* USER CODE BEGIN PV */
-// 0 - Hall, 1 - Plate
 uint8_t current_algorithm = 0;
-
-// 0 - No Shimmer, 1 - Shimmer
 uint8_t shimmerOn = 0;
+int32_t tone_history = 0;
 
-// ADC Values
-uint16_t adc_values[3];
+volatile uint16_t adc_values[3];
 uint32_t mix_val = 0, decay_val = 0, tone_val = 0;
 
-// Буфери для DMA (Подвійна буферизація / Ping-Pong)
 #define AUDIO_BUF_SIZE 512
 uint16_t rx_buf[AUDIO_BUF_SIZE];
 uint16_t tx_buf[AUDIO_BUF_SIZE];
@@ -85,11 +61,9 @@ int16_t comb4_buf[2053];
 
 CombFilter comb1, comb2, comb3, comb4;
 
-// Пам'ять для 2 послідовних All-Pass фільтрів (теж взаємно прості числа)
-int16_t ap1_buf[227]; // ~4.7 мс
-int16_t ap2_buf[347]; // ~7.2 мс
+int16_t ap1_buf[227];
+int16_t ap2_buf[347];
 
-// Об'єкти фільтрів
 AllPassFilter ap1, ap2;
 /* USER CODE END PV */
 
@@ -100,317 +74,196 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_I2S3_Init(void);
 static void MX_ADC1_Init(void);
-/* USER CODE BEGIN PFP */
 
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-// Функція для налаштування фільтра при старті (прив'язуємо масив до структури)
 void Comb_Init(CombFilter *comb, int16_t *buf, uint32_t sz, int32_t fb) {
     comb->buffer = buf;
     comb->size = sz;
     comb->idx = 0;
     comb->feedback = fb;
-    
-    // Очищаємо пам'ять від можливого сміття (тиша)
-    for(uint32_t i = 0; i < sz; i++) {
-        comb->buffer[i] = 0; 
-    }
+    for(uint32_t i = 0; i < sz; i++) comb->buffer[i] = 0; 
 }
 
-// Ініціалізація All-Pass фільтра
 void AllPass_Init(AllPassFilter *ap, int16_t *buf, uint32_t sz, int32_t fb) {
     ap->buffer = buf;
     ap->size = sz;
     ap->idx = 0;
     ap->feedback = fb;
-    for(uint32_t i = 0; i < sz; i++) {
-        ap->buffer[i] = 0; 
-    }
+    for(uint32_t i = 0; i < sz; i++) ap->buffer[i] = 0; 
 }
 
-// Обробка одного семплу через All-Pass
 int16_t AllPass_Process(AllPassFilter *ap, int16_t input) {
-    // 1. Читаємо старий семпл з буфера
     int16_t bufout = ap->buffer[ap->idx];
-    
-    // 2. Рахуємо вихідний сигнал (Формула: відлуння - (вхід * фідбек))
     int32_t out32 = bufout - ((input * ap->feedback) >> 15);
-    
-    // 3. Рахуємо нове значення для пам'яті (Формула: вхід + (відлуння * фідбек))
     int32_t bufnew32 = input + ((bufout * ap->feedback) >> 15);
     
-    // 4. Захист від переповнення (Кліппінг) для пам'яті
     if(bufnew32 > 32767) bufnew32 = 32767;
     else if(bufnew32 < -32768) bufnew32 = -32768;
     
-    // 5. Записуємо в буфер і рухаємо головку
     ap->buffer[ap->idx] = (int16_t)bufnew32;
     ap->idx++;
     if (ap->idx >= ap->size) ap->idx = 0;
     
-    // 6. Захист від переповнення для виходу
     if(out32 > 32767) out32 = 32767;
     else if(out32 < -32768) out32 = -32768;
-    
     return (int16_t)out32;
 }
-// Універсальна функція обробки ОДНОГО семплу для БУДЬ-ЯКОГО комб-фільтра
-int16_t Comb_Process(CombFilter *comb, int16_t input) {
-    // 1. Читаємо старий семпл (відлуння) з буфера
-    int16_t out_sample = comb->buffer[comb->idx];
 
-    // 2. Рахуємо нове значення для запису: Вхід + (Відлуння * Фідбек)
-    // Оскільки feedback у нас у Q15 (максимум 32767 = 0.999), 
-    // після множення робимо зсув вправо на 15, щоб поділити на 32768.
+int16_t Comb_Process(CombFilter *comb, int16_t input) {
+    int16_t out_sample = comb->buffer[comb->idx];
     int32_t new_val = input + ((out_sample * comb->feedback) >> 15);
 
-    // 3. ЗАХИСТ ВІД ПЕРЕПОВНЕННЯ (Clipping)
-    // IIR-фільтри можуть легко вийти за межі 16 біт при резонансі. 
-    // Жорстко обмежуємо сигнал, щоб не було цифрового вереску.
     if (new_val > 32767) new_val = 32767;
     else if (new_val < -32768) new_val = -32768;
 
-    // 4. Записуємо нове значення на "стрічку"
     comb->buffer[comb->idx] = (int16_t)new_val;
-
-    // 5. Рухаємо головку
     comb->idx++;
-    if (comb->idx >= comb->size) {
-        comb->idx = 0;
-    }
+    if (comb->idx >= comb->size) comb->idx = 0;
 
-    // Повертаємо тільки відлуння (бо за Шредером ми сумуємо саме відлуння)
     return out_sample;
+}
+
+
+// Пришвидшимо згладжування для тесту (>> 5 замість >> 8), щоб ручки реагували миттєво
+void Read_Pots_And_Smooth(void) {
+    // 1. Створюємо "мертві зони" для ручок
+    uint32_t raw_mix = adc_values[0];
+    if (raw_mix < 50) raw_mix = 0;           // Глушимо мікроструми в нулі
+    else if (raw_mix > 4040) raw_mix = 4095; // Гарантуємо 100% на максимумі
+
+    uint32_t raw_decay = adc_values[1];
+    if (raw_decay < 50) raw_decay = 0;
+    else if (raw_decay > 4040) raw_decay = 4095;
+
+    uint32_t raw_tone = adc_values[2];
+    if (raw_tone < 50) raw_tone = 0;
+    else if (raw_tone > 4040) raw_tone = 4095;
+
+    // 2. Згладжуємо вже "очищені" значення
+    mix_val   = ((mix_val   * 15) + raw_mix) >> 4;
+    decay_val = ((decay_val * 15) + raw_decay) >> 4;
+    tone_val  = ((tone_val  * 15) + raw_tone) >> 4;
+
+    // 3. Масштабуємо Decay у Feedback
+    // 30000 - максимальний фідбек. Якщо decay_val = 0, фідбек буде гарантовано 0.
+    int32_t current_feedback = (decay_val * 30000) >> 12;
+
+    comb1.feedback = current_feedback;
+    comb2.feedback = current_feedback;
+    comb3.feedback = current_feedback;
+    comb4.feedback = current_feedback;
+}
+
+void Process_Audio_Block(uint32_t start_idx, uint32_t end_idx) {
+    // Локальні копії для швидкості (щоб не звертатися до глобальних у циклі)
+    int32_t l_mix = (int32_t)mix_val;
+    int32_t l_tone = (int32_t)tone_val;
+
+    for (uint32_t i = start_idx; i < end_idx; i += 4) {
+        
+        // Читаємо вхід
+        int16_t dry_sample = (int16_t)rx_buf[i];
+
+        // 1. Вхід для ревербератора (зсув >> 2 замість / 4)
+        int16_t input_att = dry_sample >> 2; 
+
+        // 2. Паралельні фільтри
+        int32_t reverb_sum = 0;
+        reverb_sum += Comb_Process(&comb1, input_att);
+        reverb_sum += Comb_Process(&comb2, input_att);
+        reverb_sum += Comb_Process(&comb3, input_att);
+        reverb_sum += Comb_Process(&comb4, input_att);
+
+        // 3. Дифузія (All-Pass)
+        int16_t wet = (int16_t)(reverb_sum >> 2); 
+        wet = AllPass_Process(&ap1, wet);
+        wet = AllPass_Process(&ap2, wet);
+
+        // 4. Тон-фільтр (LPF)
+        // Формула: (wet * tone + history * (4096-tone)) >> 12
+        tone_history = ((wet * l_tone) + (tone_history * (4096 - l_tone)) + 2048) >> 12;
+        wet = (int16_t)tone_history;
+
+        // 5. (Blend - зберігає 100% атаки та високих частот):
+        int32_t out32 = dry_sample + ((wet * l_mix) >> 12);
+        
+        // Лімітер
+        if (out32 > 32767) out32 = 32767;
+        else if (out32 < -32768) out32 = -32768;
+
+        int16_t out_sample = (int16_t)out32;
+
+        // 6. Вихід на ЦАП
+        tx_buf[i]   = (uint16_t)out_sample; 
+        tx_buf[i+1] = 0;                    
+        tx_buf[i+2] = (uint16_t)out_sample; 
+        tx_buf[i+3] = 0; 
+    }
 }
 /* USER CODE END 0 */
 
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
 int main(void)
 {
-
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
   SystemClock_Config();
-
-  /* Configure the peripherals common clocks */
   PeriphCommonClock_Config();
 
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_I2S3_Init();
   MX_ADC1_Init();
+
   /* USER CODE BEGIN 2 */
+  // Запуск АЦП один раз у фоні
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_values, 3);
+  HAL_NVIC_DisableIRQ(DMA2_Stream0_IRQn); // Вимикаємо переривання АЦП
 
-  /* Обов'язково вмикаємо тактування SPI3 для роботи LL функцій */
   LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_SPI3);
-
-  /* Вимикаємо переривання DMA в NVIC, щоб HAL не скидав прапорці HT/TC замість нас */
   HAL_NVIC_DisableIRQ(DMA1_Stream0_IRQn);
   HAL_NVIC_DisableIRQ(DMA1_Stream5_IRQn);
 
-  /* --- Знімаємо живлення з I2S перед налаштуванням --- */
   LL_I2S_Disable(SPI3);
   LL_I2S_Disable(I2S3ext);
 
-  /* --- Налаштування DMA для прийому (RX - Stream 0) --- */
   LL_DMA_SetDataLength(DMA1, LL_DMA_STREAM_0, AUDIO_BUF_SIZE);
-  LL_DMA_ConfigAddresses(DMA1, LL_DMA_STREAM_0, 
-                         (uint32_t)&I2S3ext->DR, 
-                         (uint32_t)rx_buf, 
-                         LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
-
-  /* --- Налаштування DMA для передачі (TX - Stream 5) --- */
+  LL_DMA_ConfigAddresses(DMA1, LL_DMA_STREAM_0, (uint32_t)&I2S3ext->DR, (uint32_t)rx_buf, LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
   LL_DMA_SetDataLength(DMA1, LL_DMA_STREAM_5, AUDIO_BUF_SIZE);
-  LL_DMA_ConfigAddresses(DMA1, LL_DMA_STREAM_5, 
-                         (uint32_t)tx_buf, 
-                         (uint32_t)&SPI3->DR, 
-                         LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
+  LL_DMA_ConfigAddresses(DMA1, LL_DMA_STREAM_5, (uint32_t)tx_buf, (uint32_t)&SPI3->DR, LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
 
-  /* Дозволяємо I2S генерувати запити до DMA */
   LL_I2S_EnableDMAReq_RX(I2S3ext);
   LL_I2S_EnableDMAReq_TX(SPI3);
-
-  /* Вмикаємо потоки DMA */
   LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_0);
   LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_5);
-
-  /* Вмикаємо I2S (ПОРЯДОК ВАЖЛИВИЙ: Спочатку приймач, потім майстер-передавач) */
   LL_I2S_Enable(I2S3ext);
   LL_I2S_Enable(SPI3);
-
 
   Comb_Init(&comb1, comb1_buf, 1433, 28000);
   Comb_Init(&comb2, comb2_buf, 1601, 28000);
   Comb_Init(&comb3, comb3_buf, 1867, 28000);
   Comb_Init(&comb4, comb4_buf, 2053, 28000);
-
-  // Ініціалізація розсіювачів
   AllPass_Init(&ap1, ap1_buf, 227, 22937);
   AllPass_Init(&ap2, ap2_buf, 347, 22937);
   /* USER CODE END 2 */
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    // Блималка (Heartbeat)
-    static uint32_t heartbeat = 0;
-    if (++heartbeat >= 500000) {  
-        LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_13);
-        heartbeat = 0;
-    }
 
-    // --- ОБРОБКА ПЕРШОЇ ПОЛОВИНИ БУФЕРА ---
+  while (1)
+{
     if (LL_DMA_IsActiveFlag_HT0(DMA1))
     {
         LL_DMA_ClearFlag_HT0(DMA1); 
-
-        // --- БЕЗПЕЧНЕ ЧИТАННЯ РУЧОК ---
-        HAL_ADC_Start(&hadc1);
         
-        // Читаємо Rank 1 (канал 0)
-        if (HAL_ADC_PollForConversion(&hadc1, 1) == HAL_OK) {
-            adc_values[0] = HAL_ADC_GetValue(&hadc1);
-        }
-        // Читаємо Rank 2 (канал 1)
-        if (HAL_ADC_PollForConversion(&hadc1, 1) == HAL_OK) {
-            adc_values[1] = HAL_ADC_GetValue(&hadc1);
-        }
-        // Читаємо Rank 3 (канал 3)
-        if (HAL_ADC_PollForConversion(&hadc1, 1) == HAL_OK) {
-            adc_values[2] = HAL_ADC_GetValue(&hadc1);
-        }
-        
-        HAL_ADC_Stop(&hadc1);
-        // --------------------------------
-
-        // Згладжуємо значення
-        mix_val = (mix_val * 15 + adc_values[0]) / 16;
-        decay_val = (decay_val * 15 + adc_values[1]) / 16;
-        tone_val = (tone_val * 15 + adc_values[2]) / 16;
-        
-        // Крокуємо по 4 слова (Лівий MSB, Лівий LSB, Правий MSB, Правий LSB)
-        for (uint32_t i = 0; i < (AUDIO_BUF_SIZE / 2); i += 4) {
-            
-          int16_t dry_sample = (int16_t)rx_buf[i];
-
-        // 1. Ослабляємо вхід, щоб сума чотирьох комб-фільтрів не розірвала динамік
-        int16_t input_attenuated = dry_sample / 4;
-
-        // 2. Паралельний блок (тіло реверберації)
-        int32_t reverb_mix = 0;
-        reverb_mix += Comb_Process(&comb1, input_attenuated);
-        reverb_mix += Comb_Process(&comb2, input_attenuated);
-        reverb_mix += Comb_Process(&comb3, input_attenuated);
-        reverb_mix += Comb_Process(&comb4, input_attenuated);
-
-        // Переводимо суму назад у 16 біт
-        int16_t wet_signal = (int16_t)reverb_mix;
-
-        // 3. Послідовний блок (розмазування/дифузія)
-        // Пропускаємо суму через перший All-Pass, а потім результат - через другий
-        wet_signal = AllPass_Process(&ap1, wet_signal);
-        wet_signal = AllPass_Process(&ap2, wet_signal);
-
-        // 4. Фінальний мікс: чиста гітара + розмазана реверберація
-        int16_t out_sample = (dry_sample / 2) + (wet_signal / 2);
-
-        // 5. Відправляємо на ЦАП
-        tx_buf[i]   = (uint16_t)out_sample; 
-        tx_buf[i+1] = 0;                    
-        tx_buf[i+2] = (uint16_t)out_sample; 
-        tx_buf[i+3] = 0;
-        }
+        // Просто читаємо. Ніяких "if READY", ніяких "Start_DMA".
+        Read_Pots_And_Smooth(); 
+        Process_Audio_Block(0, AUDIO_BUF_SIZE / 2);
     }
 
-    // --- ОБРОБКА ДРУГОЇ ПОЛОВИНИ БУФЕРА ---
     if (LL_DMA_IsActiveFlag_TC0(DMA1))
     {
-        LL_DMA_ClearFlag_TC0(DMA1); 
-
-        // --- БЕЗПЕЧНЕ ЧИТАННЯ РУЧОК ---
-        HAL_ADC_Start(&hadc1);
-        
-        // Читаємо Rank 1 (канал 0)
-        if (HAL_ADC_PollForConversion(&hadc1, 1) == HAL_OK) {
-            adc_values[0] = HAL_ADC_GetValue(&hadc1);
-        }
-        // Читаємо Rank 2 (канал 1)
-        if (HAL_ADC_PollForConversion(&hadc1, 1) == HAL_OK) {
-            adc_values[1] = HAL_ADC_GetValue(&hadc1);
-        }
-        // Читаємо Rank 3 (канал 3)
-        if (HAL_ADC_PollForConversion(&hadc1, 1) == HAL_OK) {
-            adc_values[2] = HAL_ADC_GetValue(&hadc1);
-        }
-        
-        HAL_ADC_Stop(&hadc1);
-        // --------------------------------
-
-        // Згладжуємо значення
-        mix_val = (mix_val * 15 + adc_values[0]) / 16;
-        decay_val = (decay_val * 15 + adc_values[1]) / 16;
-        tone_val = (tone_val * 15 + adc_values[2]) / 16;
-        
-        for (uint32_t i = (AUDIO_BUF_SIZE / 2); i < AUDIO_BUF_SIZE; i += 4) {
-            
-            int16_t dry_sample = (int16_t)rx_buf[i];
-
-        // 1. Ослабляємо вхід, щоб сума чотирьох комб-фільтрів не розірвала динамік
-        int16_t input_attenuated = dry_sample / 4;
-
-        // 2. Паралельний блок (тіло реверберації)
-        int32_t reverb_mix = 0;
-        reverb_mix += Comb_Process(&comb1, input_attenuated);
-        reverb_mix += Comb_Process(&comb2, input_attenuated);
-        reverb_mix += Comb_Process(&comb3, input_attenuated);
-        reverb_mix += Comb_Process(&comb4, input_attenuated);
-
-        // Переводимо суму назад у 16 біт
-        int16_t wet_signal = (int16_t)reverb_mix;
-
-        // 3. Послідовний блок (розмазування/дифузія)
-        // Пропускаємо суму через перший All-Pass, а потім результат - через другий
-        wet_signal = AllPass_Process(&ap1, wet_signal);
-        wet_signal = AllPass_Process(&ap2, wet_signal);
-
-        // 4. Фінальний мікс: чиста гітара + розмазана реверберація
-        int16_t out_sample = (dry_sample / 2) + (wet_signal / 2);
-
-        // 5. Відправляємо на ЦАП
-        tx_buf[i]   = (uint16_t)out_sample; 
-        tx_buf[i+1] = 0;                    
-        tx_buf[i+2] = (uint16_t)out_sample; 
-        tx_buf[i+3] = 0;
-        }
+        LL_DMA_ClearFlag_TC0(DMA1);    
+        Read_Pots_And_Smooth();
+        Process_Audio_Block(AUDIO_BUF_SIZE / 2, AUDIO_BUF_SIZE);
     }
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
+}
 }
 
 /**
@@ -509,16 +362,16 @@ static void MX_ADC1_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = ENABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.NbrOfConversion = 3;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.DMAContinuousRequests = ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
@@ -601,6 +454,7 @@ static void MX_DMA_Init(void)
   /* Init with LL driver */
   /* DMA controller clock enable */
   LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
+  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA2);
 
   /* DMA interrupt init */
   /* DMA1_Stream0_IRQn interrupt configuration */
@@ -609,6 +463,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream5_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+  /* DMA2_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
 
 }
 
@@ -649,7 +506,6 @@ static void MX_GPIO_Init(void)
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
   
-  /* Ініціалізація світлодіода на PC13, яку стер CubeMX */
   LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOC);
   LL_GPIO_SetPinMode(GPIOC, LL_GPIO_PIN_13, LL_GPIO_MODE_OUTPUT);
   LL_GPIO_SetPinSpeed(GPIOC, LL_GPIO_PIN_13, LL_GPIO_SPEED_FREQ_LOW);
