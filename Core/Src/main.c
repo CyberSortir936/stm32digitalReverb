@@ -56,11 +56,23 @@ typedef struct {
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+ADC_HandleTypeDef hadc1;
+
 I2S_HandleTypeDef hi2s3;
 DMA_HandleTypeDef hdma_i2s3_ext_rx;
 DMA_HandleTypeDef hdma_spi3_tx;
 
 /* USER CODE BEGIN PV */
+// 0 - Hall, 1 - Plate
+uint8_t current_algorithm = 0;
+
+// 0 - No Shimmer, 1 - Shimmer
+uint8_t shimmerOn = 0;
+
+// ADC Values
+uint16_t adc_values[3];
+uint32_t mix_val = 0, decay_val = 0, tone_val = 0;
+
 // Буфери для DMA (Подвійна буферизація / Ping-Pong)
 #define AUDIO_BUF_SIZE 512
 uint16_t rx_buf[AUDIO_BUF_SIZE];
@@ -87,11 +99,7 @@ void PeriphCommonClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_I2S3_Init(void);
-
-// --- ЗМІННІ ДЛЯ ДІЛЕЮ ---
-#define DELAY_SIZE 26500 // 24000 семплів = 0.5 секунди затримки при 48 кГц
-int16_t delay_line[DELAY_SIZE];
-uint32_t delay_idx = 0;
+static void MX_ADC1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -212,6 +220,7 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_I2S3_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 
   /* Обов'язково вмикаємо тактування SPI3 для роботи LL функцій */
@@ -277,6 +286,30 @@ int main(void)
     if (LL_DMA_IsActiveFlag_HT0(DMA1))
     {
         LL_DMA_ClearFlag_HT0(DMA1); 
+
+        // --- БЕЗПЕЧНЕ ЧИТАННЯ РУЧОК ---
+        HAL_ADC_Start(&hadc1);
+        
+        // Читаємо Rank 1 (канал 0)
+        if (HAL_ADC_PollForConversion(&hadc1, 1) == HAL_OK) {
+            adc_values[0] = HAL_ADC_GetValue(&hadc1);
+        }
+        // Читаємо Rank 2 (канал 1)
+        if (HAL_ADC_PollForConversion(&hadc1, 1) == HAL_OK) {
+            adc_values[1] = HAL_ADC_GetValue(&hadc1);
+        }
+        // Читаємо Rank 3 (канал 3)
+        if (HAL_ADC_PollForConversion(&hadc1, 1) == HAL_OK) {
+            adc_values[2] = HAL_ADC_GetValue(&hadc1);
+        }
+        
+        HAL_ADC_Stop(&hadc1);
+        // --------------------------------
+
+        // Згладжуємо значення
+        mix_val = (mix_val * 15 + adc_values[0]) / 16;
+        decay_val = (decay_val * 15 + adc_values[1]) / 16;
+        tone_val = (tone_val * 15 + adc_values[2]) / 16;
         
         // Крокуємо по 4 слова (Лівий MSB, Лівий LSB, Правий MSB, Правий LSB)
         for (uint32_t i = 0; i < (AUDIO_BUF_SIZE / 2); i += 4) {
@@ -316,6 +349,30 @@ int main(void)
     if (LL_DMA_IsActiveFlag_TC0(DMA1))
     {
         LL_DMA_ClearFlag_TC0(DMA1); 
+
+        // --- БЕЗПЕЧНЕ ЧИТАННЯ РУЧОК ---
+        HAL_ADC_Start(&hadc1);
+        
+        // Читаємо Rank 1 (канал 0)
+        if (HAL_ADC_PollForConversion(&hadc1, 1) == HAL_OK) {
+            adc_values[0] = HAL_ADC_GetValue(&hadc1);
+        }
+        // Читаємо Rank 2 (канал 1)
+        if (HAL_ADC_PollForConversion(&hadc1, 1) == HAL_OK) {
+            adc_values[1] = HAL_ADC_GetValue(&hadc1);
+        }
+        // Читаємо Rank 3 (канал 3)
+        if (HAL_ADC_PollForConversion(&hadc1, 1) == HAL_OK) {
+            adc_values[2] = HAL_ADC_GetValue(&hadc1);
+        }
+        
+        HAL_ADC_Stop(&hadc1);
+        // --------------------------------
+
+        // Згладжуємо значення
+        mix_val = (mix_val * 15 + adc_values[0]) / 16;
+        decay_val = (decay_val * 15 + adc_values[1]) / 16;
+        tone_val = (tone_val * 15 + adc_values[2]) / 16;
         
         for (uint32_t i = (AUDIO_BUF_SIZE / 2); i < AUDIO_BUF_SIZE; i += 4) {
             
@@ -429,6 +486,76 @@ void PeriphCommonClock_Config(void)
   {
 
   }
+}
+
+/**
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC1_Init(void)
+{
+
+  /* USER CODE BEGIN ADC1_Init 0 */
+
+  /* USER CODE END ADC1_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC1_Init 1 */
+
+  /* USER CODE END ADC1_Init 1 */
+
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+  */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.ScanConvMode = ENABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.NbrOfConversion = 3;
+  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Rank = 2;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_3;
+  sConfig.Rank = 3;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC1_Init 2 */
+
+  /* USER CODE END ADC1_Init 2 */
+
 }
 
 /**
@@ -552,7 +679,7 @@ void Error_Handler(void)
 #ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
-  * where the assert_param error has occurred.
+  *         where the assert_param error has occurred.
   * @param  file: pointer to the source file name
   * @param  line: assert_param error line source number
   * @retval None

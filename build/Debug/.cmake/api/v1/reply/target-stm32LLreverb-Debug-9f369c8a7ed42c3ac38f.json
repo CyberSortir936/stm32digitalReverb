@@ -36,39 +36,17 @@
 			{
 				"command" : 1,
 				"file" : 1,
-				"line" : 88,
+				"line" : 90,
 				"parent" : 2
-			},
-			{
-				"command" : 1,
-				"file" : 0,
-				"line" : 64,
-				"parent" : 0
 			},
 			{
 				"command" : 2,
 				"file" : 1,
-				"line" : 82,
+				"line" : 84,
 				"parent" : 2
 			}
 		]
 	},
-	"codemodelVersion" : 
-	{
-		"major" : 2,
-		"minor" : 10
-	},
-	"compileDependencies" : 
-	[
-		{
-			"backtrace" : 3,
-			"id" : "STM32_Drivers::@768a070a0fe75716b479"
-		},
-		{
-			"backtrace" : 4,
-			"id" : "stm32cubemx::@768a070a0fe75716b479"
-		}
-	],
 	"compileGroups" : 
 	[
 		{
@@ -222,21 +200,6 @@
 		],
 		"language" : "C"
 	},
-	"linkLibraries" : 
-	[
-		{
-			"backtrace" : 3,
-			"id" : "STM32_Drivers::@768a070a0fe75716b479"
-		},
-		{
-			"backtrace" : 3,
-			"fragment" : "m"
-		},
-		{
-			"backtrace" : 4,
-			"id" : "stm32cubemx::@768a070a0fe75716b479"
-		}
-	],
 	"name" : "stm32LLreverb",
 	"nameOnDisk" : "stm32LLreverb.elf",
 	"paths" : 
@@ -288,44 +251,46 @@
 				23,
 				24,
 				25,
-				26
+				26,
+				27,
+				28
 			]
 		}
 	],
 	"sources" : 
 	[
 		{
-			"backtrace" : 5,
+			"backtrace" : 4,
 			"compileGroupIndex" : 0,
 			"path" : "Core/Src/main.c",
 			"sourceGroupIndex" : 0
 		},
 		{
-			"backtrace" : 5,
+			"backtrace" : 4,
 			"compileGroupIndex" : 0,
 			"path" : "Core/Src/stm32f4xx_it.c",
 			"sourceGroupIndex" : 0
 		},
 		{
-			"backtrace" : 5,
+			"backtrace" : 4,
 			"compileGroupIndex" : 0,
 			"path" : "Core/Src/stm32f4xx_hal_msp.c",
 			"sourceGroupIndex" : 0
 		},
 		{
-			"backtrace" : 5,
+			"backtrace" : 4,
 			"compileGroupIndex" : 0,
 			"path" : "Core/Src/sysmem.c",
 			"sourceGroupIndex" : 0
 		},
 		{
-			"backtrace" : 5,
+			"backtrace" : 4,
 			"compileGroupIndex" : 0,
 			"path" : "Core/Src/syscalls.c",
 			"sourceGroupIndex" : 0
 		},
 		{
-			"backtrace" : 5,
+			"backtrace" : 4,
 			"compileGroupIndex" : 1,
 			"path" : "startup_stm32f411xe.s",
 			"sourceGroupIndex" : 1
@@ -345,19 +310,13 @@
 		{
 			"backtrace" : 3,
 			"isGenerated" : true,
-			"path" : "build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_dma.c.obj",
+			"path" : "build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c.obj",
 			"sourceGroupIndex" : 2
 		},
 		{
 			"backtrace" : 3,
 			"isGenerated" : true,
-			"path" : "build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.c.obj",
-			"sourceGroupIndex" : 2
-		},
-		{
-			"backtrace" : 3,
-			"isGenerated" : true,
-			"path" : "build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c.obj",
+			"path" : "build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc_ex.c.obj",
 			"sourceGroupIndex" : 2
 		},
 		{
@@ -454,6 +413,24 @@
 			"backtrace" : 3,
 			"isGenerated" : true,
 			"path" : "build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c.obj",
+			"sourceGroupIndex" : 2
+		},
+		{
+			"backtrace" : 3,
+			"isGenerated" : true,
+			"path" : "build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_dma.c.obj",
+			"sourceGroupIndex" : 2
+		},
+		{
+			"backtrace" : 3,
+			"isGenerated" : true,
+			"path" : "build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.c.obj",
+			"sourceGroupIndex" : 2
+		},
+		{
+			"backtrace" : 3,
+			"isGenerated" : true,
+			"path" : "build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c.obj",
 			"sourceGroupIndex" : 2
 		}
 	],
