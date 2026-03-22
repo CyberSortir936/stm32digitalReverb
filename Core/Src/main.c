@@ -155,19 +155,24 @@ void Read_Pots_And_Smooth(void) {
 }
 
 void Process_Audio_Block(uint32_t start_idx, uint32_t end_idx) {
-    // Локальні копії для швидкості (щоб не звертатися до глобальних у циклі)
     int32_t l_mix = (int32_t)mix_val;
     int32_t l_tone = (int32_t)tone_val;
 
     for (uint32_t i = start_idx; i < end_idx; i += 4) {
         
-        // Читаємо вхід
-        int16_t dry_sample = (int16_t)rx_buf[i];
+        // --- РОЗГАДКА LITTLE ENDIAN ---
+        // rx_buf[i]   - це молодші біти (LSB)
+        // rx_buf[i+1] - це старші біти (MSB), ТУТ ОСНОВНИЙ ЗВУК
+        
+        uint16_t dry_L_LSB = rx_buf[i];             
+        int16_t  dry_L_MSB = (int16_t)rx_buf[i+1];  // Беремо MSB як основу
+        uint16_t dry_R_LSB = rx_buf[i+2];           
+        int16_t  dry_R_MSB = (int16_t)rx_buf[i+3];  
 
-        // 1. Вхід для ревербератора (зсув >> 2 замість / 4)
-        int16_t input_att = dry_sample >> 2; 
+        // 1. Вхід для ревербератора (беремо правильний MSB)
+        int16_t input_att = dry_L_MSB >> 2; 
 
-        // 2. Паралельні фільтри
+        // 2. Паралельні Comb-фільтри
         int32_t reverb_sum = 0;
         reverb_sum += Comb_Process(&comb1, input_att);
         reverb_sum += Comb_Process(&comb2, input_att);
@@ -179,25 +184,23 @@ void Process_Audio_Block(uint32_t start_idx, uint32_t end_idx) {
         wet = AllPass_Process(&ap1, wet);
         wet = AllPass_Process(&ap2, wet);
 
-        // 4. Тон-фільтр (LPF)
-        // Формула: (wet * tone + history * (4096-tone)) >> 12
+        // 4. Тон-фільтр
         tone_history = ((wet * l_tone) + (tone_history * (4096 - l_tone)) + 2048) >> 12;
         wet = (int16_t)tone_history;
 
-        // 5. (Blend - зберігає 100% атаки та високих частот):
-        int32_t out32 = dry_sample + ((wet * l_mix) >> 12);
+        // 5. ДОДАЄМО ЕФЕКТ
+        int32_t out_L = dry_L_MSB + ((wet * l_mix) >> 12);
+        int32_t out_R = dry_R_MSB + ((wet * l_mix) >> 12); 
         
         // Лімітер
-        if (out32 > 32767) out32 = 32767;
-        else if (out32 < -32768) out32 = -32768;
+        if (out_L > 32767) out_L = 32767; else if (out_L < -32768) out_L = -32768;
+        if (out_R > 32767) out_R = 32767; else if (out_R < -32768) out_R = -32768;
 
-        int16_t out_sample = (int16_t)out32;
-
-        // 6. Вихід на ЦАП
-        tx_buf[i]   = (uint16_t)out_sample; 
-        tx_buf[i+1] = 0;                    
-        tx_buf[i+2] = (uint16_t)out_sample; 
-        tx_buf[i+3] = 0; 
+        // 6. ПРАВИЛЬНИЙ ВИХІД НА ЦАП
+        tx_buf[i]   = dry_L_LSB;             // Молодші біти на своє місце (i)
+        tx_buf[i+1] = (uint16_t)out_L;       // Старші біти з ефектом на своє (i+1)
+        tx_buf[i+2] = dry_R_LSB;
+        tx_buf[i+3] = (uint16_t)out_R;
     }
 }
 /* USER CODE END 0 */
