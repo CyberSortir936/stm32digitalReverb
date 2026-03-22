@@ -160,27 +160,29 @@ void Process_Audio_Block(uint32_t start_idx, uint32_t end_idx) {
 
     for (uint32_t i = start_idx; i < end_idx; i += 4) {
         
-        // --- РОЗГАДКА LITTLE ENDIAN ---
-        // rx_buf[i]   - це молодші біти (LSB)
-        // rx_buf[i+1] - це старші біти (MSB), ТУТ ОСНОВНИЙ ЗВУК
+        // ПОВЕРТАЄМОСЯ ДО ТВОЇХ ПРАВИЛЬНИХ ІНДЕКСІВ:
+        // i   = Лівий MSB (Основний звук)
+        // i+1 = Лівий LSB (Втрачені мікродеталі та верха)
+        // i+2 = Правий MSB
+        // i+3 = Правий LSB
         
-        uint16_t dry_L_LSB = rx_buf[i];             
-        int16_t  dry_L_MSB = (int16_t)rx_buf[i+1];  // Беремо MSB як основу
-        uint16_t dry_R_LSB = rx_buf[i+2];           
-        int16_t  dry_R_MSB = (int16_t)rx_buf[i+3];  
+        int16_t  dry_L_MSB = (int16_t)rx_buf[i];     // Твій старий-добрий робочий індекс!
+        uint16_t dry_L_LSB = rx_buf[i+1];            
+        int16_t  dry_R_MSB = (int16_t)rx_buf[i+2];  
+        uint16_t dry_R_LSB = rx_buf[i+3];  
 
-        // 1. Вхід для ревербератора (беремо правильний MSB)
-        int16_t input_att = dry_L_MSB >> 2; 
+        // 1. Вхід для ревербератора (гучний)
+        int16_t input_att = dry_L_MSB >> 1; 
 
-        // 2. Паралельні Comb-фільтри
+        // 2. Паралельні фільтри
         int32_t reverb_sum = 0;
         reverb_sum += Comb_Process(&comb1, input_att);
         reverb_sum += Comb_Process(&comb2, input_att);
         reverb_sum += Comb_Process(&comb3, input_att);
         reverb_sum += Comb_Process(&comb4, input_att);
 
-        // 3. Дифузія (All-Pass)
-        int16_t wet = (int16_t)(reverb_sum >> 2); 
+        // 3. Дифузія (гучна)
+        int16_t wet = (int16_t)(reverb_sum >> 1); 
         wet = AllPass_Process(&ap1, wet);
         wet = AllPass_Process(&ap2, wet);
 
@@ -196,11 +198,11 @@ void Process_Audio_Block(uint32_t start_idx, uint32_t end_idx) {
         if (out_L > 32767) out_L = 32767; else if (out_L < -32768) out_L = -32768;
         if (out_R > 32767) out_R = 32767; else if (out_R < -32768) out_R = -32768;
 
-        // 6. ПРАВИЛЬНИЙ ВИХІД НА ЦАП
-        tx_buf[i]   = dry_L_LSB;             // Молодші біти на своє місце (i)
-        tx_buf[i+1] = (uint16_t)out_L;       // Старші біти з ефектом на своє (i+1)
-        tx_buf[i+2] = dry_R_LSB;
-        tx_buf[i+3] = (uint16_t)out_R;
+        // 6. ІДЕАЛЬНИЙ ВИХІД НА ЦАП
+        tx_buf[i]   = (uint16_t)out_L;       // Оброблений основний звук
+        tx_buf[i+1] = dry_L_LSB;             // Повертаємо мікродеталі замість нулів!
+        tx_buf[i+2] = (uint16_t)out_R;       // Праве вухо
+        tx_buf[i+3] = dry_R_LSB;             // Мікродеталі правого вуха
     }
 }
 /* USER CODE END 0 */
