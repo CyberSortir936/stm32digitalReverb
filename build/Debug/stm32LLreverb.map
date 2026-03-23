@@ -3387,6 +3387,31 @@ Discarded input sections
  .text          0x00000000       0x14 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
  .data          0x00000000        0x0 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
  .bss           0x00000000        0x0 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
+ .group         0x00000000        0xc CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .group         0x00000000        0xc CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .group         0x00000000        0xc CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .group         0x00000000        0xc CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .group         0x00000000        0xc CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .group         0x00000000        0xc CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .group         0x00000000        0xc CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .text          0x00000000        0x0 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .data          0x00000000        0x0 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .bss           0x00000000        0x0 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .text.LPF_Init
+                0x00000000       0x24 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .text.Delay_Line_Init
+                0x00000000       0x4e CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .text.LPF_Process
+                0x00000000       0x74 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .text.Delay_Line_Process
+                0x00000000       0x58 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .debug_macro   0x00000000      0xade CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .debug_macro   0x00000000       0x22 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .debug_macro   0x00000000       0x8e CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .debug_macro   0x00000000       0x51 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .debug_macro   0x00000000      0x103 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .debug_macro   0x00000000       0x6a CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .debug_macro   0x00000000      0x1df CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
  .text          0x00000000       0x30 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_uldivmod.o)
  .data          0x00000000        0x0 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_uldivmod.o)
  .bss           0x00000000        0x0 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_uldivmod.o)
@@ -3867,6 +3892,7 @@ LOAD CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
 LOAD CMakeFiles/stm32LLreverb.dir/Core/Src/sysmem.c.obj
 LOAD CMakeFiles/stm32LLreverb.dir/Core/Src/syscalls.c.obj
 LOAD CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
+LOAD CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
 LOAD D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libm.a
 START GROUP
 LOAD D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard\libgcc.a
@@ -3890,7 +3916,7 @@ LOAD D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/
                 0x08000000                g_pfnVectors
                 0x08000198                        . = ALIGN (0x4)
 
-.text           0x08000198     0x3968
+.text           0x08000198     0x38d8
                 0x08000198                        . = ALIGN (0x4)
  *(.text)
  .text          0x08000198       0x40 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
@@ -4123,233 +4149,229 @@ LOAD D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/
                 0x08002c7c       0x16 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
  .text.LL_I2S_EnableDMAReq_TX
                 0x08002c92       0x16 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
- .text.Comb_Init
-                0x08002ca8       0x56 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
-                0x08002ca8                Comb_Init
- .text.AllPass_Init
-                0x08002cfe       0x56 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
-                0x08002cfe                AllPass_Init
- .text.AllPass_Process
-                0x08002d54       0xc4 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
-                0x08002d54                AllPass_Process
- .text.Comb_Process
-                0x08002e18       0x90 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
-                0x08002e18                Comb_Process
  .text.Read_Pots_And_Smooth
-                0x08002ea8      0x104 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
-                0x08002ea8                Read_Pots_And_Smooth
+                0x08002ca8      0x10c CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+                0x08002ca8                Read_Pots_And_Smooth
  .text.Process_Audio_Block
-                0x08002fac      0x1dc CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
-                0x08002fac                Process_Audio_Block
- .text.main     0x08003188      0x1ac CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
-                0x08003188                main
+                0x08002db4      0x194 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+                0x08002db4                Process_Audio_Block
+ .text.main     0x08002f48      0x1ac CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+                0x08002f48                main
  .text.SystemClock_Config
-                0x08003334       0xc8 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
-                0x08003334                SystemClock_Config
+                0x080030f4       0xc8 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+                0x080030f4                SystemClock_Config
  .text.PeriphCommonClock_Config
-                0x080033fc       0x2c CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
-                0x080033fc                PeriphCommonClock_Config
+                0x080031bc       0x2c CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+                0x080031bc                PeriphCommonClock_Config
  .text.MX_ADC1_Init
-                0x08003428       0xdc CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+                0x080031e8       0xdc CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
  .text.MX_I2S3_Init
-                0x08003504       0x5c CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+                0x080032c4       0x5c CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
  .text.MX_DMA_Init
-                0x08003560       0x48 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+                0x08003320       0x48 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
  .text.MX_GPIO_Init
-                0x080035a8       0xa8 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+                0x08003368       0xa8 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
  .text.Error_Handler
-                0x08003650        0xc CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
-                0x08003650                Error_Handler
+                0x08003410        0xc CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+                0x08003410                Error_Handler
  .text.NMI_Handler
-                0x0800365c        0x8 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
-                0x0800365c                NMI_Handler
+                0x0800341c        0x8 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+                0x0800341c                NMI_Handler
  .text.HardFault_Handler
-                0x08003664        0x8 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
-                0x08003664                HardFault_Handler
+                0x08003424        0x8 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+                0x08003424                HardFault_Handler
  .text.MemManage_Handler
-                0x0800366c        0x8 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
-                0x0800366c                MemManage_Handler
+                0x0800342c        0x8 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+                0x0800342c                MemManage_Handler
  .text.BusFault_Handler
-                0x08003674        0x8 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
-                0x08003674                BusFault_Handler
+                0x08003434        0x8 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+                0x08003434                BusFault_Handler
  .text.UsageFault_Handler
-                0x0800367c        0x8 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
-                0x0800367c                UsageFault_Handler
+                0x0800343c        0x8 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+                0x0800343c                UsageFault_Handler
  .text.SVC_Handler
-                0x08003684        0xe CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
-                0x08003684                SVC_Handler
+                0x08003444        0xe CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+                0x08003444                SVC_Handler
  .text.DebugMon_Handler
-                0x08003692        0xe CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
-                0x08003692                DebugMon_Handler
+                0x08003452        0xe CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+                0x08003452                DebugMon_Handler
  .text.PendSV_Handler
-                0x080036a0        0xe CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
-                0x080036a0                PendSV_Handler
+                0x08003460        0xe CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+                0x08003460                PendSV_Handler
  .text.SysTick_Handler
-                0x080036ae        0xc CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
-                0x080036ae                SysTick_Handler
- *fill*         0x080036ba        0x2 
+                0x0800346e        0xc CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+                0x0800346e                SysTick_Handler
+ *fill*         0x0800347a        0x2 
  .text.DMA1_Stream0_IRQHandler
-                0x080036bc       0x14 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
-                0x080036bc                DMA1_Stream0_IRQHandler
+                0x0800347c       0x14 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+                0x0800347c                DMA1_Stream0_IRQHandler
  .text.DMA1_Stream5_IRQHandler
-                0x080036d0       0x14 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
-                0x080036d0                DMA1_Stream5_IRQHandler
+                0x08003490       0x14 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+                0x08003490                DMA1_Stream5_IRQHandler
  .text.DMA2_Stream0_IRQHandler
-                0x080036e4       0x14 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
-                0x080036e4                DMA2_Stream0_IRQHandler
+                0x080034a4       0x14 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+                0x080034a4                DMA2_Stream0_IRQHandler
  .text.LL_RCC_SetI2SClockSource
-                0x080036f8       0x28 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
+                0x080034b8       0x28 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
  .text.HAL_MspInit
-                0x08003720       0x50 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
-                0x08003720                HAL_MspInit
+                0x080034e0       0x50 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
+                0x080034e0                HAL_MspInit
  .text.HAL_ADC_MspInit
-                0x08003770       0xf0 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
-                0x08003770                HAL_ADC_MspInit
+                0x08003530       0xf0 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
+                0x08003530                HAL_ADC_MspInit
  .text.HAL_I2S_MspInit
-                0x08003860      0x1ec CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
-                0x08003860                HAL_I2S_MspInit
+                0x08003620      0x1ec CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
+                0x08003620                HAL_I2S_MspInit
  .text.Reset_Handler
-                0x08003a4c       0x50 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
-                0x08003a4c                Reset_Handler
+                0x0800380c       0x50 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
+                0x0800380c                Reset_Handler
  .text.Default_Handler
-                0x08003a9c        0x2 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
-                0x08003a9c                RTC_Alarm_IRQHandler
-                0x08003a9c                EXTI2_IRQHandler
-                0x08003a9c                SPI4_IRQHandler
-                0x08003a9c                TIM1_CC_IRQHandler
-                0x08003a9c                DMA2_Stream5_IRQHandler
-                0x08003a9c                PVD_IRQHandler
-                0x08003a9c                SDIO_IRQHandler
-                0x08003a9c                TAMP_STAMP_IRQHandler
-                0x08003a9c                EXTI3_IRQHandler
-                0x08003a9c                TIM1_UP_TIM10_IRQHandler
-                0x08003a9c                I2C3_ER_IRQHandler
-                0x08003a9c                EXTI0_IRQHandler
-                0x08003a9c                I2C2_EV_IRQHandler
-                0x08003a9c                DMA1_Stream2_IRQHandler
-                0x08003a9c                FPU_IRQHandler
-                0x08003a9c                DMA2_Stream2_IRQHandler
-                0x08003a9c                SPI1_IRQHandler
-                0x08003a9c                TIM1_BRK_TIM9_IRQHandler
-                0x08003a9c                DMA2_Stream3_IRQHandler
-                0x08003a9c                USART6_IRQHandler
-                0x08003a9c                TIM4_IRQHandler
-                0x08003a9c                I2C1_EV_IRQHandler
-                0x08003a9c                DMA1_Stream6_IRQHandler
-                0x08003a9c                DMA1_Stream1_IRQHandler
-                0x08003a9c                TIM3_IRQHandler
-                0x08003a9c                RCC_IRQHandler
-                0x08003a9c                Default_Handler
-                0x08003a9c                EXTI15_10_IRQHandler
-                0x08003a9c                ADC_IRQHandler
-                0x08003a9c                DMA1_Stream7_IRQHandler
-                0x08003a9c                SPI5_IRQHandler
-                0x08003a9c                TIM5_IRQHandler
-                0x08003a9c                DMA2_Stream7_IRQHandler
-                0x08003a9c                I2C3_EV_IRQHandler
-                0x08003a9c                EXTI9_5_IRQHandler
-                0x08003a9c                RTC_WKUP_IRQHandler
-                0x08003a9c                SPI2_IRQHandler
-                0x08003a9c                EXTI4_IRQHandler
-                0x08003a9c                WWDG_IRQHandler
-                0x08003a9c                TIM2_IRQHandler
-                0x08003a9c                OTG_FS_WKUP_IRQHandler
-                0x08003a9c                TIM1_TRG_COM_TIM11_IRQHandler
-                0x08003a9c                EXTI1_IRQHandler
-                0x08003a9c                USART2_IRQHandler
-                0x08003a9c                I2C2_ER_IRQHandler
-                0x08003a9c                DMA2_Stream1_IRQHandler
-                0x08003a9c                FLASH_IRQHandler
-                0x08003a9c                DMA2_Stream4_IRQHandler
-                0x08003a9c                USART1_IRQHandler
-                0x08003a9c                OTG_FS_IRQHandler
-                0x08003a9c                SPI3_IRQHandler
-                0x08003a9c                DMA1_Stream4_IRQHandler
-                0x08003a9c                I2C1_ER_IRQHandler
-                0x08003a9c                DMA2_Stream6_IRQHandler
-                0x08003a9c                DMA1_Stream3_IRQHandler
- *fill*         0x08003a9e        0x2 
+                0x0800385c        0x2 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
+                0x0800385c                RTC_Alarm_IRQHandler
+                0x0800385c                EXTI2_IRQHandler
+                0x0800385c                SPI4_IRQHandler
+                0x0800385c                TIM1_CC_IRQHandler
+                0x0800385c                DMA2_Stream5_IRQHandler
+                0x0800385c                PVD_IRQHandler
+                0x0800385c                SDIO_IRQHandler
+                0x0800385c                TAMP_STAMP_IRQHandler
+                0x0800385c                EXTI3_IRQHandler
+                0x0800385c                TIM1_UP_TIM10_IRQHandler
+                0x0800385c                I2C3_ER_IRQHandler
+                0x0800385c                EXTI0_IRQHandler
+                0x0800385c                I2C2_EV_IRQHandler
+                0x0800385c                DMA1_Stream2_IRQHandler
+                0x0800385c                FPU_IRQHandler
+                0x0800385c                DMA2_Stream2_IRQHandler
+                0x0800385c                SPI1_IRQHandler
+                0x0800385c                TIM1_BRK_TIM9_IRQHandler
+                0x0800385c                DMA2_Stream3_IRQHandler
+                0x0800385c                USART6_IRQHandler
+                0x0800385c                TIM4_IRQHandler
+                0x0800385c                I2C1_EV_IRQHandler
+                0x0800385c                DMA1_Stream6_IRQHandler
+                0x0800385c                DMA1_Stream1_IRQHandler
+                0x0800385c                TIM3_IRQHandler
+                0x0800385c                RCC_IRQHandler
+                0x0800385c                Default_Handler
+                0x0800385c                EXTI15_10_IRQHandler
+                0x0800385c                ADC_IRQHandler
+                0x0800385c                DMA1_Stream7_IRQHandler
+                0x0800385c                SPI5_IRQHandler
+                0x0800385c                TIM5_IRQHandler
+                0x0800385c                DMA2_Stream7_IRQHandler
+                0x0800385c                I2C3_EV_IRQHandler
+                0x0800385c                EXTI9_5_IRQHandler
+                0x0800385c                RTC_WKUP_IRQHandler
+                0x0800385c                SPI2_IRQHandler
+                0x0800385c                EXTI4_IRQHandler
+                0x0800385c                WWDG_IRQHandler
+                0x0800385c                TIM2_IRQHandler
+                0x0800385c                OTG_FS_WKUP_IRQHandler
+                0x0800385c                TIM1_TRG_COM_TIM11_IRQHandler
+                0x0800385c                EXTI1_IRQHandler
+                0x0800385c                USART2_IRQHandler
+                0x0800385c                I2C2_ER_IRQHandler
+                0x0800385c                DMA2_Stream1_IRQHandler
+                0x0800385c                FLASH_IRQHandler
+                0x0800385c                DMA2_Stream4_IRQHandler
+                0x0800385c                USART1_IRQHandler
+                0x0800385c                OTG_FS_IRQHandler
+                0x0800385c                SPI3_IRQHandler
+                0x0800385c                DMA1_Stream4_IRQHandler
+                0x0800385c                I2C1_ER_IRQHandler
+                0x0800385c                DMA2_Stream6_IRQHandler
+                0x0800385c                DMA1_Stream3_IRQHandler
+ .text.Delay_Filter_Init
+                0x0800385e       0x56 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+                0x0800385e                Delay_Filter_Init
+ .text.Comb_Process
+                0x080038b4       0x94 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+                0x080038b4                Comb_Process
+ .text.AllPass_Process
+                0x08003948       0xc8 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+                0x08003948                AllPass_Process
  .text.__libc_init_array
-                0x08003aa0       0x48 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
-                0x08003aa0                __libc_init_array
+                0x08003a10       0x48 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
+                0x08003a10                __libc_init_array
  *(.glue_7)
- .glue_7        0x08003ae8        0x0 linker stubs
+ .glue_7        0x08003a58        0x0 linker stubs
  *(.glue_7t)
- .glue_7t       0x08003ae8        0x0 linker stubs
+ .glue_7t       0x08003a58        0x0 linker stubs
  *(.eh_frame)
- .eh_frame      0x08003ae8        0x0 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
+ .eh_frame      0x08003a58        0x0 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
  *(.init)
- .init          0x08003ae8        0x4 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crti.o
-                0x08003ae8                _init
- .init          0x08003aec        0x8 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtn.o
+ .init          0x08003a58        0x4 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crti.o
+                0x08003a58                _init
+ .init          0x08003a5c        0x8 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtn.o
  *(.fini)
- .fini          0x08003af4        0x4 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crti.o
-                0x08003af4                _fini
- .fini          0x08003af8        0x8 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtn.o
-                0x08003b00                        . = ALIGN (0x4)
-                0x08003b00                        _etext = .
+ .fini          0x08003a64        0x4 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crti.o
+                0x08003a64                _fini
+ .fini          0x08003a68        0x8 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtn.o
+                0x08003a70                        . = ALIGN (0x4)
+                0x08003a70                        _etext = .
 
-.vfp11_veneer   0x08003b00        0x0
- .vfp11_veneer  0x08003b00        0x0 linker stubs
+.vfp11_veneer   0x08003a70        0x0
+ .vfp11_veneer  0x08003a70        0x0 linker stubs
 
-.v4_bx          0x08003b00        0x0
- .v4_bx         0x08003b00        0x0 linker stubs
+.v4_bx          0x08003a70        0x0
+ .v4_bx         0x08003a70        0x0 linker stubs
 
-.iplt           0x08003b00        0x0
- .iplt          0x08003b00        0x0 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
+.iplt           0x08003a70        0x0
+ .iplt          0x08003a70        0x0 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
 
-.rodata         0x08003b00       0x10
-                0x08003b00                        . = ALIGN (0x4)
+.rodata         0x08003a70       0x10
+                0x08003a70                        . = ALIGN (0x4)
  *(.rodata)
  *(.rodata*)
  .rodata.flagBitshiftOffset.0
-                0x08003b00        0x8 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c.obj
+                0x08003a70        0x8 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c.obj
  .rodata.STREAM_OFFSET_TAB
-                0x08003b08        0x8 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
-                0x08003b10                        . = ALIGN (0x4)
+                0x08003a78        0x8 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+                0x08003a80                        . = ALIGN (0x4)
 
-.rel.dyn        0x08003b10        0x0
- .rel.iplt      0x08003b10        0x0 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
+.rel.dyn        0x08003a80        0x0
+ .rel.iplt      0x08003a80        0x0 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
 
-.ARM.extab      0x08003b10        0x0
-                0x08003b10                        . = ALIGN (0x4)
+.ARM.extab      0x08003a80        0x0
+                0x08003a80                        . = ALIGN (0x4)
  *(.ARM.extab* .gnu.linkonce.armextab.*)
-                0x08003b10                        . = ALIGN (0x4)
+                0x08003a80                        . = ALIGN (0x4)
 
-.ARM            0x08003b10        0x0
-                0x08003b10                        . = ALIGN (0x4)
-                0x08003b10                        __exidx_start = .
+.ARM            0x08003a80        0x0
+                0x08003a80                        . = ALIGN (0x4)
+                0x08003a80                        __exidx_start = .
  *(.ARM.exidx*)
-                0x08003b10                        __exidx_end = .
-                0x08003b10                        . = ALIGN (0x4)
+                0x08003a80                        __exidx_end = .
+                0x08003a80                        . = ALIGN (0x4)
 
-.preinit_array  0x08003b10        0x0
-                0x08003b10                        . = ALIGN (0x4)
-                0x08003b10                        PROVIDE (__preinit_array_start = .)
+.preinit_array  0x08003a80        0x0
+                0x08003a80                        . = ALIGN (0x4)
+                0x08003a80                        PROVIDE (__preinit_array_start = .)
  *(.preinit_array*)
-                0x08003b10                        PROVIDE (__preinit_array_end = .)
-                0x08003b10                        . = ALIGN (0x4)
+                0x08003a80                        PROVIDE (__preinit_array_end = .)
+                0x08003a80                        . = ALIGN (0x4)
 
-.init_array     0x08003b10        0x4
-                0x08003b10                        . = ALIGN (0x4)
-                0x08003b10                        PROVIDE (__init_array_start = .)
+.init_array     0x08003a80        0x4
+                0x08003a80                        . = ALIGN (0x4)
+                0x08003a80                        PROVIDE (__init_array_start = .)
  *(SORT_BY_NAME(.init_array.*))
  *(.init_array*)
- .init_array    0x08003b10        0x4 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
-                0x08003b14                        PROVIDE (__init_array_end = .)
-                0x08003b14                        . = ALIGN (0x4)
+ .init_array    0x08003a80        0x4 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
+                0x08003a84                        PROVIDE (__init_array_end = .)
+                0x08003a84                        . = ALIGN (0x4)
 
-.fini_array     0x08003b14        0x4
-                0x08003b14                        . = ALIGN (0x4)
+.fini_array     0x08003a84        0x4
+                0x08003a84                        . = ALIGN (0x4)
                 [!provide]                        PROVIDE (__fini_array_start = .)
  *(SORT_BY_NAME(.fini_array.*))
  *(.fini_array*)
- .fini_array    0x08003b14        0x4 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
+ .fini_array    0x08003a84        0x4 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
                 [!provide]                        PROVIDE (__fini_array_end = .)
-                0x08003b18                        . = ALIGN (0x4)
-                0x08003b18                        _sidata = LOADADDR (.data)
+                0x08003a88                        . = ALIGN (0x4)
+                0x08003a88                        _sidata = LOADADDR (.data)
 
-.data           0x20000000        0xc load address 0x08003b18
+.data           0x20000000        0xc load address 0x08003a88
                 0x20000000                        . = ALIGN (0x4)
                 0x20000000                        _sdata = .
  *(.data)
@@ -4368,10 +4390,10 @@ LOAD D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/
                 0x2000000c                        . = ALIGN (0x4)
  *fill*         0x20000009        0x3 
 
-.igot.plt       0x2000000c        0x0 load address 0x08003b24
+.igot.plt       0x2000000c        0x0 load address 0x08003a94
  .igot.plt      0x2000000c        0x0 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
 
-.tdata          0x2000000c        0x0 load address 0x08003b24
+.tdata          0x2000000c        0x0 load address 0x08003a94
  *(.tdata .tdata.* .gnu.linkonce.td.*)
                 0x2000000c                        . = ALIGN (0x4)
                 0x2000000c                        _edata = .
@@ -4388,7 +4410,7 @@ LOAD D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/
                 [!provide]                        PROVIDE (__data_source_end = __tdata_source_end)
                 [!provide]                        PROVIDE (__data_source_size = (__data_source_end - __data_source))
 
-.tbss           0x2000000c        0x0 load address 0x08003b24
+.tbss           0x2000000c        0x0 load address 0x08003a94
                 0x2000000c                        _sbss = .
                 0x2000000c                        __bss_start__ = _sbss
  *(.tbss .tbss.*)
@@ -4405,7 +4427,7 @@ LOAD D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/
                 [!provide]                        PROVIDE (__arm32_tls_tcb_offset = MAX (0x8, __tls_align))
                 [!provide]                        PROVIDE (__arm64_tls_tcb_offset = MAX (0x10, __tls_align))
 
-.bss            0x2000000c     0x4524 load address 0x08003b24
+.bss            0x2000000c     0x4524 load address 0x08003a94
  *(.bss)
  .bss           0x2000000c       0x1c D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
  *(.bss*)
@@ -4486,7 +4508,7 @@ LOAD D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/
                 [!provide]                        PROVIDE (__bss_size = (__bss_end - __bss_start))
 
 ._user_heap_stack
-                0x20004530      0x600 load address 0x08003b24
+                0x20004530      0x600 load address 0x08003a94
                 0x20004530                        . = ALIGN (0x8)
                 [!provide]                        PROVIDE (end = .)
                 0x20004530                        PROVIDE (_end = .)
@@ -4540,9 +4562,11 @@ LOAD linker stubs
  .ARM.attributes
                 0x0000032e       0x21 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
  .ARM.attributes
-                0x0000034f       0x34 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
+                0x0000034f       0x34 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
  .ARM.attributes
-                0x00000383       0x22 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtn.o
+                0x00000383       0x34 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
+ .ARM.attributes
+                0x000003b7       0x22 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtn.o
 
 .comment        0x00000000       0x43
  .comment       0x00000000       0x43 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f4xx.c.obj
@@ -4573,10 +4597,12 @@ LOAD linker stubs
                                  0x44 (size before relaxing)
  .comment       0x00000043        0x0 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
                                  0x44 (size before relaxing)
+ .comment       0x00000043        0x0 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+                                 0x44 (size before relaxing)
  .comment       0x00000043        0x0 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
                                  0x44 (size before relaxing)
 
-.debug_info     0x00000000     0x98b2
+.debug_info     0x00000000     0x9ab4
  .debug_info    0x00000000      0x53e cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f4xx.c.obj
  .debug_info    0x0000053e      0x951 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_gpio.c.obj
  .debug_info    0x00000e8f      0xce0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c.obj
@@ -4588,13 +4614,14 @@ LOAD linker stubs
  .debug_info    0x0000471a      0x8c4 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c.obj
  .debug_info    0x00004fde      0xe07 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.c.obj
  .debug_info    0x00005de5      0xab3 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c.obj
- .debug_info    0x00006898     0x1dab CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
- .debug_info    0x00008643      0x435 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
- .debug_info    0x00008a78      0xcff CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
- .debug_info    0x00009777       0x30 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
- .debug_info    0x000097a7      0x10b D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
+ .debug_info    0x00006898     0x1c15 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+ .debug_info    0x000084ad      0x435 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+ .debug_info    0x000088e2      0xcff CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
+ .debug_info    0x000095e1       0x30 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
+ .debug_info    0x00009611      0x398 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .debug_info    0x000099a9      0x10b D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
 
-.debug_abbrev   0x00000000     0x2034
+.debug_abbrev   0x00000000     0x2152
  .debug_abbrev  0x00000000      0x11a cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f4xx.c.obj
  .debug_abbrev  0x0000011a      0x236 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_gpio.c.obj
  .debug_abbrev  0x00000350      0x20e cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c.obj
@@ -4606,13 +4633,14 @@ LOAD linker stubs
  .debug_abbrev  0x00001053      0x24b cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c.obj
  .debug_abbrev  0x0000129e      0x26c cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.c.obj
  .debug_abbrev  0x0000150a      0x285 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c.obj
- .debug_abbrev  0x0000178f      0x423 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
- .debug_abbrev  0x00001bb2      0x164 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
- .debug_abbrev  0x00001d16      0x231 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
- .debug_abbrev  0x00001f47       0x24 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
- .debug_abbrev  0x00001f6b       0xc9 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
+ .debug_abbrev  0x0000178f      0x41d CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+ .debug_abbrev  0x00001bac      0x164 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+ .debug_abbrev  0x00001d10      0x231 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
+ .debug_abbrev  0x00001f41       0x24 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
+ .debug_abbrev  0x00001f65      0x124 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .debug_abbrev  0x00002089       0xc9 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
 
-.debug_aranges  0x00000000      0xa38
+.debug_aranges  0x00000000      0xa68
  .debug_aranges
                 0x00000000       0x28 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f4xx.c.obj
  .debug_aranges
@@ -4636,18 +4664,20 @@ LOAD linker stubs
  .debug_aranges
                 0x000006d8       0x88 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c.obj
  .debug_aranges
-                0x00000760      0x1d0 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+                0x00000760      0x1b0 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
  .debug_aranges
-                0x00000930       0x78 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+                0x00000910       0x78 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
  .debug_aranges
-                0x000009a8       0x48 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
+                0x00000988       0x48 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
  .debug_aranges
-                0x000009f0       0x28 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
+                0x000009d0       0x28 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
  .debug_aranges
-                0x00000a18       0x20 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
+                0x000009f8       0x50 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .debug_aranges
+                0x00000a48       0x20 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
 
 .debug_rnglists
-                0x00000000      0x79b
+                0x00000000      0x7ba
  .debug_rnglists
                 0x00000000       0x1a cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f4xx.c.obj
  .debug_rnglists
@@ -4671,17 +4701,19 @@ LOAD linker stubs
  .debug_rnglists
                 0x0000051e       0x6a cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c.obj
  .debug_rnglists
-                0x00000588      0x15f CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+                0x00000588      0x145 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
  .debug_rnglists
-                0x000006e7       0x55 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+                0x000006cd       0x55 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
  .debug_rnglists
-                0x0000073c       0x33 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
+                0x00000722       0x33 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
  .debug_rnglists
-                0x0000076f       0x19 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
+                0x00000755       0x19 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
  .debug_rnglists
-                0x00000788       0x13 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
+                0x0000076e       0x39 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .debug_rnglists
+                0x000007a7       0x13 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
 
-.debug_macro    0x00000000    0x17a98
+.debug_macro    0x00000000    0x17b0f
  .debug_macro   0x00000000      0x1f1 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f4xx.c.obj
  .debug_macro   0x000001f1      0xade cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f4xx.c.obj
  .debug_macro   0x00000ccf       0x2e cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f4xx.c.obj
@@ -4742,17 +4774,18 @@ LOAD linker stubs
  .debug_macro   0x00016501      0x251 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c.obj
  .debug_macro   0x00016752      0x1f9 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.c.obj
  .debug_macro   0x0001694b      0x1f1 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c.obj
- .debug_macro   0x00016b3c      0x25b CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
- .debug_macro   0x00016d97      0x1e6 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
- .debug_macro   0x00016f7d       0xe8 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
- .debug_macro   0x00017065      0x1a6 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
- .debug_macro   0x0001720b       0x61 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
- .debug_macro   0x0001726c      0x149 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
- .debug_macro   0x000173b5      0x241 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
- .debug_macro   0x000175f6      0x256 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
- .debug_macro   0x0001784c      0x24c CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
+ .debug_macro   0x00016b3c      0x265 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+ .debug_macro   0x00016da1      0x1e6 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+ .debug_macro   0x00016f87       0xe8 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+ .debug_macro   0x0001706f      0x1a6 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+ .debug_macro   0x00017215       0x61 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+ .debug_macro   0x00017276      0x149 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+ .debug_macro   0x000173bf      0x241 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+ .debug_macro   0x00017600      0x256 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+ .debug_macro   0x00017856      0x24c CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
+ .debug_macro   0x00017aa2       0x6d CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
 
-.debug_line     0x00000000     0xbb8a
+.debug_line     0x00000000     0xbebd
  .debug_line    0x00000000      0x7c1 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f4xx.c.obj
  .debug_line    0x000007c1      0xb06 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_gpio.c.obj
  .debug_line    0x000012c7     0x1194 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c.obj
@@ -4764,47 +4797,50 @@ LOAD linker stubs
  .debug_line    0x000063c4      0xa3d cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c.obj
  .debug_line    0x00006e01     0x1395 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.c.obj
  .debug_line    0x00008196     0x1295 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c.obj
- .debug_line    0x0000942b     0x12e3 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
- .debug_line    0x0000a70e      0x912 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
- .debug_line    0x0000b020      0x980 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
- .debug_line    0x0000b9a0       0x7a CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
- .debug_line    0x0000ba1a      0x170 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
+ .debug_line    0x0000942b     0x1112 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+ .debug_line    0x0000a53d      0x8fa CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+ .debug_line    0x0000ae37      0x968 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
+ .debug_line    0x0000b79f       0x7a CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
+ .debug_line    0x0000b819      0x534 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .debug_line    0x0000bd4d      0x170 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
 
-.debug_str      0x00000000    0x99c88
- .debug_str     0x00000000    0x99c88 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f4xx.c.obj
+.debug_str      0x00000000    0x99d1b
+ .debug_str     0x00000000    0x99d1b cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f4xx.c.obj
                               0x8b220 (size before relaxing)
- .debug_str     0x00099c88        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_gpio.c.obj
+ .debug_str     0x00099d1b        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_gpio.c.obj
                               0x8c70d (size before relaxing)
- .debug_str     0x00099c88        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c.obj
+ .debug_str     0x00099d1b        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c.obj
                               0x8b7fb (size before relaxing)
- .debug_str     0x00099c88        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_utils.c.obj
+ .debug_str     0x00099d1b        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_utils.c.obj
                               0x92ca6 (size before relaxing)
- .debug_str     0x00099c88        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c.obj
+ .debug_str     0x00099d1b        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c.obj
                               0x8b3a8 (size before relaxing)
- .debug_str     0x00099c88        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c.obj
+ .debug_str     0x00099d1b        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c.obj
                               0x8b39b (size before relaxing)
- .debug_str     0x00099c88        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c.obj
+ .debug_str     0x00099d1b        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c.obj
                               0x8b628 (size before relaxing)
- .debug_str     0x00099c88        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c.obj
+ .debug_str     0x00099d1b        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c.obj
                               0x8b9b6 (size before relaxing)
- .debug_str     0x00099c88        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c.obj
+ .debug_str     0x00099d1b        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c.obj
                               0x8bc4c (size before relaxing)
- .debug_str     0x00099c88        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.c.obj
+ .debug_str     0x00099d1b        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.c.obj
                               0x8b7ff (size before relaxing)
- .debug_str     0x00099c88        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c.obj
+ .debug_str     0x00099d1b        0x0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c.obj
                               0x8b701 (size before relaxing)
- .debug_str     0x00099c88        0x0 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
-                              0x96a4f (size before relaxing)
- .debug_str     0x00099c88        0x0 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+ .debug_str     0x00099d1b        0x0 CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+                              0x969fe (size before relaxing)
+ .debug_str     0x00099d1b        0x0 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
                               0x94d1e (size before relaxing)
- .debug_str     0x00099c88        0x0 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
+ .debug_str     0x00099d1b        0x0 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
                               0x951f7 (size before relaxing)
- .debug_str     0x00099c88        0x0 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
+ .debug_str     0x00099d1b        0x0 CMakeFiles/stm32LLreverb.dir/startup_stm32f411xe.s.obj
                                  0x82 (size before relaxing)
- .debug_str     0x00099c88        0x0 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
+ .debug_str     0x00099d1b        0x0 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+                               0x3ee4 (size before relaxing)
+ .debug_str     0x00099d1b        0x0 D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
                                 0x272 (size before relaxing)
 
-.debug_frame    0x00000000     0x2840
+.debug_frame    0x00000000     0x28c8
  .debug_frame   0x00000000       0x58 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f4xx.c.obj
  .debug_frame   0x00000058      0x1c0 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_gpio.c.obj
  .debug_frame   0x00000218      0x3fc cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c.obj
@@ -4816,10 +4852,11 @@ LOAD linker stubs
  .debug_frame   0x000013c8      0x374 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c.obj
  .debug_frame   0x0000173c      0x484 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.c.obj
  .debug_frame   0x00001bc0      0x220 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c.obj
- .debug_frame   0x00001de0      0x7ec CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
- .debug_frame   0x000025cc      0x158 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
- .debug_frame   0x00002724       0xf0 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
- .debug_frame   0x00002814       0x2c D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
+ .debug_frame   0x00001de0      0x74c CMakeFiles/stm32LLreverb.dir/Core/Src/main.c.obj
+ .debug_frame   0x0000252c      0x158 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_it.c.obj
+ .debug_frame   0x00002684       0xf0 CMakeFiles/stm32LLreverb.dir/Core/Src/stm32f4xx_hal_msp.c.obj
+ .debug_frame   0x00002774      0x128 CMakeFiles/stm32LLreverb.dir/Core/Src/reverb_dsp.c.obj
+ .debug_frame   0x0000289c       0x2c D:/Software/CubeCLT/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libg_nano.a(libc_a-init.o)
 
 .debug_line_str
                 0x00000000       0x66

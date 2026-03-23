@@ -15,23 +15,13 @@
 #include "stm32f4xx_ll_gpio.h"
 #include "stm32f4xx_ll_dma.h"
 #include "stm32f4xx_ll_spi.h"
+
+#include "reverb_dsp.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-typedef struct {
-    int16_t *buffer;
-    uint32_t size;
-    uint32_t idx;
-    int32_t feedback;
-} CombFilter;
 
-typedef struct {
-    int16_t *buffer;
-    uint32_t size;
-    uint32_t idx;
-    int32_t feedback;
-} AllPassFilter;
 /* USER CODE END PTD */
 
 /* Private variables ---------------------------------------------------------*/
@@ -59,12 +49,12 @@ int16_t comb2_buf[1601];
 int16_t comb3_buf[1867];
 int16_t comb4_buf[2053];
 
-CombFilter comb1, comb2, comb3, comb4;
+Delay_Filter comb1, comb2, comb3, comb4; //Comb filters
 
 int16_t ap1_buf[227];
 int16_t ap2_buf[347];
 
-AllPassFilter ap1, ap2;
+Delay_Filter ap1, ap2; //All Pass filters
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -76,52 +66,6 @@ static void MX_I2S3_Init(void);
 static void MX_ADC1_Init(void);
 
 /* USER CODE BEGIN 0 */
-void Comb_Init(CombFilter *comb, int16_t *buf, uint32_t sz, int32_t fb) {
-    comb->buffer = buf;
-    comb->size = sz;
-    comb->idx = 0;
-    comb->feedback = fb;
-    for(uint32_t i = 0; i < sz; i++) comb->buffer[i] = 0; 
-}
-
-void AllPass_Init(AllPassFilter *ap, int16_t *buf, uint32_t sz, int32_t fb) {
-    ap->buffer = buf;
-    ap->size = sz;
-    ap->idx = 0;
-    ap->feedback = fb;
-    for(uint32_t i = 0; i < sz; i++) ap->buffer[i] = 0; 
-}
-
-int16_t AllPass_Process(AllPassFilter *ap, int16_t input) {
-    int16_t bufout = ap->buffer[ap->idx];
-    int32_t out32 = bufout - ((input * ap->feedback) >> 15);
-    int32_t bufnew32 = input + ((bufout * ap->feedback) >> 15);
-    
-    if(bufnew32 > 32767) bufnew32 = 32767;
-    else if(bufnew32 < -32768) bufnew32 = -32768;
-    
-    ap->buffer[ap->idx] = (int16_t)bufnew32;
-    ap->idx++;
-    if (ap->idx >= ap->size) ap->idx = 0;
-    
-    if(out32 > 32767) out32 = 32767;
-    else if(out32 < -32768) out32 = -32768;
-    return (int16_t)out32;
-}
-
-int16_t Comb_Process(CombFilter *comb, int16_t input) {
-    int16_t out_sample = comb->buffer[comb->idx];
-    int32_t new_val = input + ((out_sample * comb->feedback) >> 15);
-
-    if (new_val > 32767) new_val = 32767;
-    else if (new_val < -32768) new_val = -32768;
-
-    comb->buffer[comb->idx] = (int16_t)new_val;
-    comb->idx++;
-    if (comb->idx >= comb->size) comb->idx = 0;
-
-    return out_sample;
-}
 
 
 // Пришвидшимо згладжування для тесту (>> 5 замість >> 8), щоб ручки реагували миттєво
@@ -154,6 +98,7 @@ void Read_Pots_And_Smooth(void) {
     comb4.feedback = current_feedback;
 }
 
+// Only left channel is processed and copied to both channels
 void Process_Audio_Block(uint32_t start_idx, uint32_t end_idx) {
     int32_t l_mix = (int32_t)mix_val;
     int32_t l_tone = (int32_t)tone_val;
@@ -163,13 +108,9 @@ void Process_Audio_Block(uint32_t start_idx, uint32_t end_idx) {
         // ПОВЕРТАЄМОСЯ ДО ТВОЇХ ПРАВИЛЬНИХ ІНДЕКСІВ:
         // i   = Лівий MSB (Основний звук)
         // i+1 = Лівий LSB (Втрачені мікродеталі та верха)
-        // i+2 = Правий MSB
-        // i+3 = Правий LSB
         
         int16_t  dry_L_MSB = (int16_t)rx_buf[i];     // Твій старий-добрий робочий індекс!
         uint16_t dry_L_LSB = rx_buf[i+1];            
-        int16_t  dry_R_MSB = (int16_t)rx_buf[i+2];  
-        uint16_t dry_R_LSB = rx_buf[i+3];  
 
         // 1. Вхід для ревербератора (гучний)
         int16_t input_att = dry_L_MSB >> 1; 
@@ -192,17 +133,15 @@ void Process_Audio_Block(uint32_t start_idx, uint32_t end_idx) {
 
         // 5. ДОДАЄМО ЕФЕКТ
         int32_t out_L = dry_L_MSB + ((wet * l_mix) >> 12);
-        int32_t out_R = dry_R_MSB + ((wet * l_mix) >> 12); 
         
         // Лімітер
         if (out_L > 32767) out_L = 32767; else if (out_L < -32768) out_L = -32768;
-        if (out_R > 32767) out_R = 32767; else if (out_R < -32768) out_R = -32768;
 
         // 6. ІДЕАЛЬНИЙ ВИХІД НА ЦАП
         tx_buf[i]   = (uint16_t)out_L;       // Оброблений основний звук
         tx_buf[i+1] = dry_L_LSB;             // Повертаємо мікродеталі замість нулів!
-        tx_buf[i+2] = (uint16_t)out_R;       // Праве вухо
-        tx_buf[i+3] = dry_R_LSB;             // Мікродеталі правого вуха
+        tx_buf[i+2] = (uint16_t)out_L;       // Праве вухо
+        tx_buf[i+3] = dry_L_LSB;             
     }
 }
 /* USER CODE END 0 */
@@ -242,12 +181,12 @@ int main(void)
   LL_I2S_Enable(I2S3ext);
   LL_I2S_Enable(SPI3);
 
-  Comb_Init(&comb1, comb1_buf, 1433, 28000);
-  Comb_Init(&comb2, comb2_buf, 1601, 28000);
-  Comb_Init(&comb3, comb3_buf, 1867, 28000);
-  Comb_Init(&comb4, comb4_buf, 2053, 28000);
-  AllPass_Init(&ap1, ap1_buf, 227, 22937);
-  AllPass_Init(&ap2, ap2_buf, 347, 22937);
+  Delay_Filter_Init(&comb1, comb1_buf, 1433, 28000);
+  Delay_Filter_Init(&comb2, comb2_buf, 1601, 28000);
+  Delay_Filter_Init(&comb3, comb3_buf, 1867, 28000);
+  Delay_Filter_Init(&comb4, comb4_buf, 2053, 28000);
+  Delay_Filter_Init(&ap1, ap1_buf, 227, 22937);
+  Delay_Filter_Init(&ap2, ap2_buf, 347, 22937);
   /* USER CODE END 2 */
 
 

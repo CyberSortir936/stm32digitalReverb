@@ -42,14 +42,15 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
 )
 
-# Add sources to executable
+# 1. Додаємо сам файл з кодом (реалізацію)
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user sources here
+    Core/Src/reverb_dsp.c    # Шлях до твого нового .c файлу
+    Core/Src/main.c          # (Якщо main.c вже там є в іншому місці - ок, але тут ми додаємо реверб)
 )
 
-# Add include paths
+# 2. Додаємо шлях до хедерів, щоб компилятор бачив "reverb_dsp.h"
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined include paths
+    Core/Inc                 # Зазвичай усі .h файли лежать тут
 )
 
 # Add project symbols (macros)
