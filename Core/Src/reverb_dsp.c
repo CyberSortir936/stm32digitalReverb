@@ -1,9 +1,11 @@
 #include "reverb_dsp.h"
+#include <math.h>
 
-#define PS_BUF_SIZE 1024
+#define PS_BUF_SIZE 4096 
 static int16_t ps_buffer[PS_BUF_SIZE];
 static uint32_t ps_write_ptr = 0;
-static float ps_read_ptr = 0;
+static float ps_phase = 0;
+static int32_t shimmer_lpf_state = 0;
 
 // --- Filter Initializations ---
 
@@ -107,6 +109,13 @@ int16_t Hall_Process(Hall_Reverb *reverb, int16_t input, uint8_t shimmer_on) {
     // Сума 4-х фільтрів може бути великою, тому ділимо на 2 (>> 1)
     int16_t wet = (int16_t)(sum >> 1); 
 
+    int16_t shim = PitchShift_OctaveUp(wet);
+    shimmer_lpf_state = shimmer_lpf_state + (((shim - shimmer_lpf_state) * 4000) >> 15);
+
+    if (shimmer_on) {
+        wet = (int16_t)(((int32_t)wet * 16384 >> 15) + ((int32_t)shimmer_lpf_state * 20000 >> 15));
+    }
+
     // Дифузія
     for(int i = 0; i < 4; i++) {
         wet = AllPass_Process(&reverb->allpasses[i], wet);
@@ -142,20 +151,41 @@ int16_t Plate_Process(Plate_Reverb *reverb, int16_t input, uint8_t shimmer_on) {
 }
 
 int16_t PitchShift_OctaveUp(int16_t input) {
-    // Записуємо вхід у буфер
+    // 1. Записуємо новий семпл у буфер
     ps_buffer[ps_write_ptr] = input;
     
-    // Читаємо у 2 рази швидше (це дає октаву вгору)
-    ps_read_ptr += 2.0f; 
-    if (ps_read_ptr >= PS_BUF_SIZE) ps_read_ptr -= PS_BUF_SIZE;
-    
-    ps_write_ptr = (ps_write_ptr + 1) % PS_BUF_SIZE;
+    // 2. ВИПРАВЛЕНО: Фаза має ЗМЕНШУВАТИСЯ! 
+    // Тоді швидкість читання буде вдвічі більшою за запис.
+    ps_phase -= 1.0f; 
+    if (ps_phase < 0.0f) {
+        ps_phase += (float)PS_BUF_SIZE;
+    }
 
-    // Проста лінійна інтерполяція, щоб не було тріску
-    uint32_t i = (uint32_t)ps_read_ptr;
-    uint32_t j = (i + 1) % PS_BUF_SIZE;
-    float frac = ps_read_ptr - (float)i;
+    // 3. Розраховуємо фазу для двох "головок"
+    float phase1 = ps_phase;
+    float phase2 = ps_phase + (PS_BUF_SIZE / 2.0f);
+    if (phase2 >= (float)PS_BUF_SIZE) phase2 -= (float)PS_BUF_SIZE;
+
+    // 4. Обчислюємо індекси для читання
+    float read_idx1 = (float)ps_write_ptr - phase1;
+    if (read_idx1 < 0.0f) read_idx1 += (float)PS_BUF_SIZE;
     
-    int32_t out = (int32_t)((1.0f - frac) * ps_buffer[i] + frac * ps_buffer[j]);
+    float read_idx2 = (float)ps_write_ptr - phase2;
+    if (read_idx2 < 0.0f) read_idx2 += (float)PS_BUF_SIZE;
+
+    int16_t tap1 = ps_buffer[(uint32_t)read_idx1];
+    int16_t tap2 = ps_buffer[(uint32_t)read_idx2];
+
+    // 5. Crossfade (плавне перехресне затухання)
+    float vol1 = 1.0f - fabsf((phase1 / (PS_BUF_SIZE / 2.0f)) - 1.0f);
+    float vol2 = 1.0f - fabsf((phase2 / (PS_BUF_SIZE / 2.0f)) - 1.0f);
+
+    // 6. Міксуємо дві головки
+    int32_t out = (int32_t)((tap1 * vol1) + (tap2 * vol2));
+
+    // 7. Просуваємо вказівник запису
+    ps_write_ptr++;
+    if (ps_write_ptr >= PS_BUF_SIZE) ps_write_ptr = 0;
+
     return (int16_t)out;
 }

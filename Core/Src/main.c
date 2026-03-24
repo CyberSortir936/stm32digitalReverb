@@ -112,7 +112,7 @@ void Read_Pots_And_Smooth(void) {
 void Update_Physical_Controls(void) {
     // Читаємо PA6 (Plate/Hall) та PA7 (Shimmer)
     alg_mode = LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_6);
-    shimmer_active = LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_7);
+    shimmer_active = !LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_7);
 }
 
 // Only left channel is processed and copied to both channels
@@ -135,7 +135,7 @@ void Process_Audio_Block(uint32_t start_idx, uint32_t end_idx) {
         int16_t input_to_reverb = dry_mono / 4; 
 
         // --- 3. ПРОЦЕС (Шиммер поки що вимкнено - 0) ---
-        int16_t wet_out = Hall_Process(&myHall, input_to_reverb, 0);
+        int16_t wet_out = Hall_Process(&myHall, input_to_reverb, shimmer_active);
 
         // --- 4. БЕЗПЕЧНИЙ MIX ---
         // Використовуємо ділення на 32768 (через зсув >> 15), 
@@ -199,7 +199,7 @@ int main(void)
   LPF_Init(&myPlate.damping_filter, 16000);
 
   // --- Ініціалізація HALL ---
-  Delay_Line_Init(&myHall.pre_delay, h_pre_delay_buf, 2400);
+  Delay_Line_Init(&myHall.pre_delay, h_pre_delay_buf, 1440);
   for(int i=0; i<8; i++) Delay_Filter_Init(&myHall.combs[i], h_comb_bufs[i], h_comb_sizes[i], 28000);
   for(int i=0; i<4; i++) Delay_Filter_Init(&myHall.allpasses[i], h_ap_bufs[i], h_ap_sizes[i], 18000);
   LPF_Init(&myHall.damping_filter, 12000);
@@ -236,7 +236,7 @@ int main(void)
     {
         LL_DMA_ClearFlag_HT0(DMA1); 
         
-        // Просто читаємо. Ніяких "if READY", ніяких "Start_DMA".
+        Update_Physical_Controls();
         Read_Pots_And_Smooth(); 
         Process_Audio_Block(0, AUDIO_BUF_SIZE / 2);
     }

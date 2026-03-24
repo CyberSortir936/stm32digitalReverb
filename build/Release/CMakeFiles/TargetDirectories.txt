@@ -1,0 +1,6 @@
+D:/Edu/diploma/code/stm32LLreverb/build/Release/CMakeFiles/stm32LLreverb.dir
+D:/Edu/diploma/code/stm32LLreverb/build/Release/CMakeFiles/edit_cache.dir
+D:/Edu/diploma/code/stm32LLreverb/build/Release/CMakeFiles/rebuild_cache.dir
+D:/Edu/diploma/code/stm32LLreverb/build/Release/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir
+D:/Edu/diploma/code/stm32LLreverb/build/Release/cmake/stm32cubemx/CMakeFiles/edit_cache.dir
+D:/Edu/diploma/code/stm32LLreverb/build/Release/cmake/stm32cubemx/CMakeFiles/rebuild_cache.dir
