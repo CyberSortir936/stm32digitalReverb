@@ -24,6 +24,16 @@
 
 /* USER CODE END PTD */
 
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+
+/* USER CODE END PD */
+
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
+
+/* USER CODE END PM */
+
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
@@ -33,28 +43,34 @@ DMA_HandleTypeDef hdma_i2s3_ext_rx;
 DMA_HandleTypeDef hdma_spi3_tx;
 
 /* USER CODE BEGIN PV */
-uint8_t current_algorithm = 0;
-uint8_t shimmerOn = 0;
-int32_t tone_history = 0;
+int32_t dc_offset_filter = 0;
 
+// --- Стан системи ---
+volatile uint8_t alg_mode = 0;       // 1 = Plate, 0 = Hall
+volatile uint8_t shimmer_active = 0; // 1 = Shimmer ON
+
+// --- Буфери для PLATE (близько 30-40 КБ) ---
+int16_t p_diff_bufs[4][300]; 
+int16_t p_tank_ap_buf[600];
+int16_t p_main_delay_buf[4500];
+
+// --- Буфери для HALL (близько 20 КБ) ---
+int16_t h_pre_delay_buf[2400];
+int16_t h_comb_bufs[8][2000]; // Просто виділимо з запасом 2000 для кожного
+const uint16_t h_comb_sizes[8] = {1557, 1617, 1491, 1422, 1277, 1356, 1188, 1116};
+int16_t h_ap_bufs[4][600];    // Запас 600 для кожного
+const uint16_t h_ap_sizes[4] = {225, 556, 441, 341};
+
+// --- Екземпляри ревербераторів ---
+Plate_Reverb myPlate;
+Hall_Reverb  myHall;
+
+// АЦП та Аудіо буфери (як і були)
 volatile uint16_t adc_values[3];
 uint32_t mix_val = 0, decay_val = 0, tone_val = 0;
-
 #define AUDIO_BUF_SIZE 512
 uint16_t rx_buf[AUDIO_BUF_SIZE];
 uint16_t tx_buf[AUDIO_BUF_SIZE];
-
-int16_t comb1_buf[1433];
-int16_t comb2_buf[1601];
-int16_t comb3_buf[1867];
-int16_t comb4_buf[2053];
-
-Delay_Filter comb1, comb2, comb3, comb4; //Comb filters
-
-int16_t ap1_buf[227];
-int16_t ap2_buf[347];
-
-Delay_Filter ap1, ap2; //All Pass filters
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -64,22 +80,26 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_I2S3_Init(void);
 static void MX_ADC1_Init(void);
+/* USER CODE BEGIN PFP */
 
+/* USER CODE END PFP */
+
+/* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
 
 // Пришвидшимо згладжування для тесту (>> 5 замість >> 8), щоб ручки реагували миттєво
 void Read_Pots_And_Smooth(void) {
+    uint32_t raw_decay = adc_values[0]; // Тепер PA0 - це Decay
+    uint32_t raw_mix   = adc_values[1]; // Тепер PA1 - це Mix
+    uint32_t raw_tone  = adc_values[2];
     // 1. Створюємо "мертві зони" для ручок
-    uint32_t raw_mix = adc_values[0];
     if (raw_mix < 50) raw_mix = 0;           // Глушимо мікроструми в нулі
     else if (raw_mix > 4040) raw_mix = 4095; // Гарантуємо 100% на максимумі
 
-    uint32_t raw_decay = adc_values[1];
     if (raw_decay < 50) raw_decay = 0;
     else if (raw_decay > 4040) raw_decay = 4095;
 
-    uint32_t raw_tone = adc_values[2];
     if (raw_tone < 50) raw_tone = 0;
     else if (raw_tone > 4040) raw_tone = 4095;
 
@@ -87,77 +107,103 @@ void Read_Pots_And_Smooth(void) {
     mix_val   = ((mix_val   * 15) + raw_mix) >> 4;
     decay_val = ((decay_val * 15) + raw_decay) >> 4;
     tone_val  = ((tone_val  * 15) + raw_tone) >> 4;
+}
 
-    // 3. Масштабуємо Decay у Feedback
-    // 30000 - максимальний фідбек. Якщо decay_val = 0, фідбек буде гарантовано 0.
-    int32_t current_feedback = (decay_val * 30000) >> 12;
-
-    comb1.feedback = current_feedback;
-    comb2.feedback = current_feedback;
-    comb3.feedback = current_feedback;
-    comb4.feedback = current_feedback;
+void Update_Physical_Controls(void) {
+    // Читаємо PA6 (Plate/Hall) та PA7 (Shimmer)
+    alg_mode = LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_6);
+    shimmer_active = LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_7);
 }
 
 // Only left channel is processed and copied to both channels
 void Process_Audio_Block(uint32_t start_idx, uint32_t end_idx) {
-    int32_t l_mix = (int32_t)mix_val;
-    int32_t l_tone = (int32_t)tone_val;
+    // --- 1. СТЕРИЛЬНІ НАЛАШТУВАННЯ (Ігноруємо АЦП-ручки) ---
+    int16_t current_mix = (int16_t)((mix_val * 32767) >> 12);
+    int16_t current_fb  = (int16_t)((decay_val * 30000) >> 12);
+    int16_t current_damp = (int16_t)((tone_val * 32767) >> 12);
+
+    // Оновлюємо структуру Hall
+    myHall.damping_filter.damping = 32767 - current_damp;
+    for(int k=0; k<8; k++) myHall.combs[k].feedback = current_fb;
 
     for (uint32_t i = start_idx; i < end_idx; i += 4) {
-        
-        // ПОВЕРТАЄМОСЯ ДО ТВОЇХ ПРАВИЛЬНИХ ІНДЕКСІВ:
-        // i   = Лівий MSB (Основний звук)
-        // i+1 = Лівий LSB (Втрачені мікродеталі та верха)
-        
-        int16_t  dry_L_MSB = (int16_t)rx_buf[i];     // Твій старий-добрий робочий індекс!
-        uint16_t dry_L_LSB = rx_buf[i+1];            
+        int16_t dry_mono = (int16_t)rx_buf[i];
 
-        // 1. Вхід для ревербератора (гучний)
-        int16_t input_att = dry_L_MSB >> 1; 
+        // --- 2. ЖОРСТКЕ ПОСЛАБЛЕННЯ ВХОДУ ---
+        // Ділимо вхідний сигнал на 4 (>> 2), щоб в Comb-фільтрах 
+        // сума (input + feedback) фізично не могла пробити 32767
+        int16_t input_to_reverb = dry_mono / 4; 
 
-        // 2. Паралельні фільтри
-        int32_t reverb_sum = 0;
-        reverb_sum += Comb_Process(&comb1, input_att);
-        reverb_sum += Comb_Process(&comb2, input_att);
-        reverb_sum += Comb_Process(&comb3, input_att);
-        reverb_sum += Comb_Process(&comb4, input_att);
+        // --- 3. ПРОЦЕС (Шиммер поки що вимкнено - 0) ---
+        int16_t wet_out = Hall_Process(&myHall, input_to_reverb, 0);
 
-        // 3. Дифузія (гучна)
-        int16_t wet = (int16_t)(reverb_sum >> 1); 
-        wet = AllPass_Process(&ap1, wet);
-        wet = AllPass_Process(&ap2, wet);
+        // --- 4. БЕЗПЕЧНИЙ MIX ---
+        // Використовуємо ділення на 32768 (через зсув >> 15), 
+        // щоб гарантовано не вилізти за межі int32_t
+        int32_t final_out = (((int32_t)dry_mono * (32767 - current_mix)) >> 15) + 
+                            (((int32_t)wet_out  * current_mix) >> 15);
 
-        // 4. Тон-фільтр
-        tone_history = ((wet * l_tone) + (tone_history * (4096 - l_tone)) + 2048) >> 12;
-        wet = (int16_t)tone_history;
+        // Лімітер на всякий пожежний
+        if (final_out > 32767) final_out = 32767;
+        if (final_out < -32768) final_out = -32768;
 
-        // 5. ДОДАЄМО ЕФЕКТ
-        int32_t out_L = dry_L_MSB + ((wet * l_mix) >> 12);
-        
-        // Лімітер
-        if (out_L > 32767) out_L = 32767; else if (out_L < -32768) out_L = -32768;
-
-        // 6. ІДЕАЛЬНИЙ ВИХІД НА ЦАП
-        tx_buf[i]   = (uint16_t)out_L;       // Оброблений основний звук
-        tx_buf[i+1] = dry_L_LSB;             // Повертаємо мікродеталі замість нулів!
-        tx_buf[i+2] = (uint16_t)out_L;       // Праве вухо
-        tx_buf[i+3] = dry_L_LSB;             
+        // --- 5. ВИВІД ---
+        tx_buf[i]   = (uint16_t)final_out;
+        tx_buf[i+1] = rx_buf[i+1];
+        tx_buf[i+2] = (uint16_t)final_out;
+        tx_buf[i+3] = rx_buf[i+3]; // Повертаємо оригінальний правий LSB
     }
 }
 /* USER CODE END 0 */
 
+/**
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
+
+  /* USER CODE BEGIN 1 */
+
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
+
+  /* USER CODE BEGIN Init */
+
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
   SystemClock_Config();
+
+  /* Configure the peripherals common clocks */
   PeriphCommonClock_Config();
 
+  /* USER CODE BEGIN SysInit */
+
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_I2S3_Init();
   MX_ADC1_Init();
-
   /* USER CODE BEGIN 2 */
+  // --- Ініціалізація PLATE ---
+  for(int i=0; i<4; i++) Delay_Filter_Init(&myPlate.diffuser[i], p_diff_bufs[i], 300-(i*40), 16384);
+  Delay_Filter_Init(&myPlate.tank_ap, p_tank_ap_buf, 600, 18000);
+  Delay_Line_Init(&myPlate.main_delay, p_main_delay_buf, 4500);
+  LPF_Init(&myPlate.damping_filter, 16000);
+
+  // --- Ініціалізація HALL ---
+  Delay_Line_Init(&myHall.pre_delay, h_pre_delay_buf, 2400);
+  for(int i=0; i<8; i++) Delay_Filter_Init(&myHall.combs[i], h_comb_bufs[i], h_comb_sizes[i], 28000);
+  for(int i=0; i<4; i++) Delay_Filter_Init(&myHall.allpasses[i], h_ap_bufs[i], h_ap_sizes[i], 18000);
+  LPF_Init(&myHall.damping_filter, 12000);
+
   // Запуск АЦП один раз у фоні
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_values, 3);
   HAL_NVIC_DisableIRQ(DMA2_Stream0_IRQn); // Вимикаємо переривання АЦП
@@ -180,18 +226,12 @@ int main(void)
   LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_5);
   LL_I2S_Enable(I2S3ext);
   LL_I2S_Enable(SPI3);
-
-  Delay_Filter_Init(&comb1, comb1_buf, 1433, 28000);
-  Delay_Filter_Init(&comb2, comb2_buf, 1601, 28000);
-  Delay_Filter_Init(&comb3, comb3_buf, 1867, 28000);
-  Delay_Filter_Init(&comb4, comb4_buf, 2053, 28000);
-  Delay_Filter_Init(&ap1, ap1_buf, 227, 22937);
-  Delay_Filter_Init(&ap2, ap2_buf, 347, 22937);
   /* USER CODE END 2 */
 
-
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
   while (1)
-{
+  {
     if (LL_DMA_IsActiveFlag_HT0(DMA1))
     {
         LL_DMA_ClearFlag_HT0(DMA1); 
@@ -207,7 +247,11 @@ int main(void)
         Read_Pots_And_Smooth();
         Process_Audio_Block(AUDIO_BUF_SIZE / 2, AUDIO_BUF_SIZE);
     }
-}
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
+  }
+  /* USER CODE END 3 */
 }
 
 /**
@@ -437,6 +481,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
   GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
   GPIO_InitStruct.Alternate = LL_GPIO_AF_5;
+  LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /**/
+  GPIO_InitStruct.Pin = LL_GPIO_PIN_6|LL_GPIO_PIN_7;
+  GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = LL_GPIO_PULL_DOWN;
   LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /**/

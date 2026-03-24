@@ -26,7 +26,7 @@ typedef struct {
     uint32_t idx;
 } Delay_Line;
 
-// --- Plate Reverb Structure ---
+// --- Reverb Structures ---
 
 typedef struct {
     Delay_Filter diffuser[4]; //AllPass
@@ -39,6 +39,14 @@ typedef struct {
 
     int16_t loop_feedback_node; // Tank output
 } Plate_Reverb;
+
+typedef struct {
+    Delay_Line pre_delay;
+    Delay_Filter combs[8];
+    Delay_Filter allpasses[4];
+    LPF_Filter damping_filter; // Hall effect
+    int16_t mix;
+} Hall_Reverb;
 
 // --- Function Prototypes ---
 
@@ -54,6 +62,8 @@ int16_t AllPass_Process(Delay_Filter *f, int16_t input);
 int16_t Delay_Line_Process(Delay_Line *f, int16_t input);
 
 // Plate Reverb Process
-int16_t Plate_Process(Plate_Reverb *reverb, int16_t input);
+int16_t Hall_Process(Hall_Reverb *reverb, int16_t input, uint8_t shimmer_on);
+int16_t Plate_Process(Plate_Reverb *reverb, int16_t input, uint8_t shimmer_on);
+int16_t PitchShift_OctaveUp(int16_t input);
 
 #endif // REVERB_DSP_H
