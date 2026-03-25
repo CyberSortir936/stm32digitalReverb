@@ -49,23 +49,23 @@ int32_t dc_offset_filter = 0;
 volatile uint8_t alg_mode = 0;       // 1 = Plate, 0 = Hall
 volatile uint8_t shimmer_active = 0; // 1 = Shimmer ON
 
-// --- Буфери для PLATE (близько 30-40 КБ) ---
+// --- Plate buffers ---
 int16_t p_diff_bufs[4][300]; 
 int16_t p_tank_ap_buf[600];
-int16_t p_main_delay_buf[4500];
+int16_t p_main_delay_buf[15000];
 
-// --- Буфери для HALL (близько 20 КБ) ---
+// --- Hall buffers ---
 int16_t h_pre_delay_buf[2400];
-int16_t h_comb_bufs[8][2000]; // Просто виділимо з запасом 2000 для кожного
-const uint16_t h_comb_sizes[8] = {1557, 1617, 1491, 1422, 1277, 1356, 1188, 1116};
-int16_t h_ap_bufs[4][600];    // Запас 600 для кожного
+int16_t h_comb_bufs[8][2000];
+const uint16_t h_comb_sizes[8] = {1557, 1617, 1491, 1422, 1277, 1356, 1188, 1116}; 
+int16_t h_ap_bufs[4][600]; 
 const uint16_t h_ap_sizes[4] = {225, 556, 441, 341};
 
-// --- Екземпляри ревербераторів ---
+// --- Reverberators structures ---
 Plate_Reverb myPlate;
 Hall_Reverb  myHall;
 
-// АЦП та Аудіо буфери (як і були)
+// ADC and audio buffers
 volatile uint16_t adc_values[3];
 uint32_t mix_val = 0, decay_val = 0, tone_val = 0;
 #define AUDIO_BUF_SIZE 512
@@ -88,70 +88,82 @@ static void MX_ADC1_Init(void);
 /* USER CODE BEGIN 0 */
 
 
-// Пришвидшимо згладжування для тесту (>> 5 замість >> 8), щоб ручки реагували миттєво
 void Read_Pots_And_Smooth(void) {
-    uint32_t raw_decay = adc_values[0]; // Тепер PA0 - це Decay
-    uint32_t raw_mix   = adc_values[1]; // Тепер PA1 - це Mix
-    uint32_t raw_tone  = adc_values[2];
-    // 1. Створюємо "мертві зони" для ручок
-    if (raw_mix < 50) raw_mix = 0;           // Глушимо мікроструми в нулі
-    else if (raw_mix > 4040) raw_mix = 4095; // Гарантуємо 100% на максимумі
+  uint32_t raw_decay = adc_values[0]; // Decay
+  uint32_t raw_mix   = adc_values[1]; // Mix
+  uint32_t raw_tone  = adc_values[2]; // Tone
 
-    if (raw_decay < 50) raw_decay = 0;
-    else if (raw_decay > 4040) raw_decay = 4095;
+  // Dead zones
+  if (raw_mix < 50) raw_mix = 0;
+  else if (raw_mix > 4040) raw_mix = 4095;
 
-    if (raw_tone < 50) raw_tone = 0;
-    else if (raw_tone > 4040) raw_tone = 4095;
+  if (raw_decay < 50) raw_decay = 0;
+  else if (raw_decay > 4040) raw_decay = 4095;
 
-    // 2. Згладжуємо вже "очищені" значення
-    mix_val   = ((mix_val   * 15) + raw_mix) >> 4;
-    decay_val = ((decay_val * 15) + raw_decay) >> 4;
-    tone_val  = ((tone_val  * 15) + raw_tone) >> 4;
+  if (raw_tone < 50) raw_tone = 0;
+  else if (raw_tone > 4040) raw_tone = 4095;
+
+  // Smoothing values
+  mix_val   = ((mix_val   * 15) + raw_mix) >> 4;
+  decay_val = ((decay_val * 15) + raw_decay) >> 4;
+  tone_val  = ((tone_val  * 15) + raw_tone) >> 4;
 }
 
 void Update_Physical_Controls(void) {
-    // Читаємо PA6 (Plate/Hall) та PA7 (Shimmer)
-    alg_mode = LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_6);
-    shimmer_active = !LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_7);
+    static uint32_t last_check_time = 0;
+    if (HAL_GetTick() - last_check_time > 20) {
+        // PA6 - plate/hall, PA7 - shimmer on/off
+        alg_mode = LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_6);
+        
+        // For some reason shimmer has artifacts when it is activated on HIGH
+        shimmer_active = !LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_7); 
+        
+        last_check_time = HAL_GetTick();
+    }
 }
 
 // Only left channel is processed and copied to both channels
 void Process_Audio_Block(uint32_t start_idx, uint32_t end_idx) {
-    // --- 1. СТЕРИЛЬНІ НАЛАШТУВАННЯ (Ігноруємо АЦП-ручки) ---
-    int16_t current_mix = (int16_t)((mix_val * 32767) >> 12);
-    int16_t current_fb  = (int16_t)((decay_val * 30000) >> 12);
-    int16_t current_damp = (int16_t)((tone_val * 32767) >> 12);
 
-    // Оновлюємо структуру Hall
-    myHall.damping_filter.damping = 32767 - current_damp;
-    for(int k=0; k<8; k++) myHall.combs[k].feedback = current_fb;
+  int16_t wet_out = 0;
 
-    for (uint32_t i = start_idx; i < end_idx; i += 4) {
-        int16_t dry_mono = (int16_t)rx_buf[i];
+  int16_t current_mix  = (int16_t)((mix_val   * 32767) >> 12);
+  int16_t current_fb = (int16_t)((decay_val * 32600) >> 12);
+  int16_t current_damp = (int16_t)((tone_val  * 32767) >> 12);
+  
+  // Hall struct update
+  myHall.damping_filter.damping = 32767 - current_damp;
+  for(int k=0; k<8; k++) myHall.combs[k].feedback = current_fb;
+  // Plate
+  myPlate.damping_filter.damping = 32767 - current_damp;
+  myPlate.decay = current_fb;
 
-        // --- 2. ЖОРСТКЕ ПОСЛАБЛЕННЯ ВХОДУ ---
-        // Ділимо вхідний сигнал на 4 (>> 2), щоб в Comb-фільтрах 
-        // сума (input + feedback) фізично не могла пробити 32767
-        int16_t input_to_reverb = dry_mono / 4; 
+  for (uint32_t i = start_idx; i < end_idx; i += 4) {
+    int16_t dry_mono = (int16_t)rx_buf[i];
 
-        // --- 3. ПРОЦЕС (Шиммер поки що вимкнено - 0) ---
-        int16_t wet_out = Hall_Process(&myHall, input_to_reverb, shimmer_active);
+    // Input attenuation
+    int16_t input_to_reverb = dry_mono / 4; 
 
-        // --- 4. БЕЗПЕЧНИЙ MIX ---
-        // Використовуємо ділення на 32768 (через зсув >> 15), 
-        // щоб гарантовано не вилізти за межі int32_t
-        int32_t final_out = (((int32_t)dry_mono * (32767 - current_mix)) >> 15) + 
+    // Algorithm select
+    if (alg_mode == 1) {
+            wet_out = Plate_Process(&myPlate, input_to_reverb, shimmer_active);
+        } else {
+            wet_out = Hall_Process(&myHall, input_to_reverb, shimmer_active);
+        }
+
+    // Mix
+    int32_t final_out = (((int32_t)dry_mono * (32767 - current_mix)) >> 15) + 
                             (((int32_t)wet_out  * current_mix) >> 15);
 
-        // Лімітер на всякий пожежний
-        if (final_out > 32767) final_out = 32767;
-        if (final_out < -32768) final_out = -32768;
+    // Limiter
+    if (final_out > 32767) final_out = 32767;
+    if (final_out < -32768) final_out = -32768;
 
-        // --- 5. ВИВІД ---
-        tx_buf[i]   = (uint16_t)final_out;
-        tx_buf[i+1] = rx_buf[i+1];
-        tx_buf[i+2] = (uint16_t)final_out;
-        tx_buf[i+3] = rx_buf[i+3]; // Повертаємо оригінальний правий LSB
+    // Output dual mono
+    tx_buf[i]   = (uint16_t)final_out;
+    tx_buf[i+1] = rx_buf[i+1];
+    tx_buf[i+2] = (uint16_t)final_out;
+    tx_buf[i+3] = rx_buf[i+3]; 
     }
 }
 /* USER CODE END 0 */
@@ -192,21 +204,21 @@ int main(void)
   MX_I2S3_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-  // --- Ініціалізація PLATE ---
+  // --- Plate init ---
   for(int i=0; i<4; i++) Delay_Filter_Init(&myPlate.diffuser[i], p_diff_bufs[i], 300-(i*40), 16384);
   Delay_Filter_Init(&myPlate.tank_ap, p_tank_ap_buf, 600, 18000);
-  Delay_Line_Init(&myPlate.main_delay, p_main_delay_buf, 4500);
+  Delay_Line_Init(&myPlate.main_delay, p_main_delay_buf, 15000);
   LPF_Init(&myPlate.damping_filter, 16000);
 
-  // --- Ініціалізація HALL ---
+  // --- Hall init ---
   Delay_Line_Init(&myHall.pre_delay, h_pre_delay_buf, 1440);
   for(int i=0; i<8; i++) Delay_Filter_Init(&myHall.combs[i], h_comb_bufs[i], h_comb_sizes[i], 28000);
   for(int i=0; i<4; i++) Delay_Filter_Init(&myHall.allpasses[i], h_ap_bufs[i], h_ap_sizes[i], 18000);
   LPF_Init(&myHall.damping_filter, 12000);
 
-  // Запуск АЦП один раз у фоні
+  // Start ADC
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_values, 3);
-  HAL_NVIC_DisableIRQ(DMA2_Stream0_IRQn); // Вимикаємо переривання АЦП
+  HAL_NVIC_DisableIRQ(DMA2_Stream0_IRQn); // Disabling ADC interrupt
 
   LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_SPI3);
   HAL_NVIC_DisableIRQ(DMA1_Stream0_IRQn);
