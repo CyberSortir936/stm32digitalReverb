@@ -1,6 +1,10 @@
 # STM32 Digital reverb
 
-This repository contains all the code needed to use **STM32F411** as a reverberation unit, as well as hardware connection schematic. The main components are:
+This repository contains all the code needed to use **STM32F411** as a reverberation unit, as well as hardware connection schematic. This unit recreate Hall and Plate reverb algorithms as well as Shimmer that can be added to both of them. 
+
+This README contains hardware description and instruction on how to connect everything and some notes about problems I've encountered. That process was long and agonizing, so I hope I can make your life a bit easier. 
+
+The main components are:
 - STM32F411 MCU
 - PCM1808 ADC
 - PCM5102 DAC
@@ -9,6 +13,8 @@ This repository contains all the code needed to use **STM32F411** as a reverbera
 - a bunch of resistors and capacitors
 
 
+## Power
+The main power source is a center negative 9V DC PSU as in most guitara pedals. STM32, ADC and DAC require 5V/3.3V or both, to power everything we use L7805 voltage regulator that outputs 5V. 5V go into STM32 and it's internal regulator is powering the MCU with 3.3V as well as outputting this vooltage to 3V3 pins. We use this pins as source for 3.3V popwer line.
 
 ## Input stage
 
