@@ -13,6 +13,10 @@ The main components are:
 - a bunch of resistors and capacitors
 
 
+![schematic](schematic.svg "Schemati")
+
+
+
 ## Power
 The main power source is a center negative 9V DC PSU as in most guitara pedals. STM32, ADC and DAC require 5V/3.3V or both, to power everything we use L7805 voltage regulator that outputs 5V. 5V go into STM32 and it's internal regulator is powering the MCU with 3.3V as well as outputting this vooltage to 3V3 pins. We use this pins as source for 3.3V popwer line.
 
