@@ -200,9 +200,9 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_I2S3_Init();
-  MX_ADC1_Init();
+  MX_DMAit();
+  MX_ADC1__Init();
+  MX_I2S3_InInit();
   /* USER CODE BEGIN 2 */
   // --- Plate init ---
   for(int i=0; i<4; i++) Delay_Filter_Init(&myPlate.diffuser[i], p_diff_bufs[i], 300-(i*40), 16384);

@@ -45,7 +45,7 @@ We use one more capacitor after the op-amp to bring the signal's reference point
 
 ### Clipping
 
-We need to be safe in case of extreme high voltages that can fry the ADC. It is achieved by clipping signal with voltage higher that 3.3V using diodes as in schematic.
+We need to be safe in case of extreme high voltages that can fry the ADC. It is achieved by clipping signal with voltage higher that 5V using diodes as in schematic.
 
 ## Peripherals
 
