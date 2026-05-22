@@ -46,7 +46,7 @@ DMA_HandleTypeDef hdma_spi3_tx;
 int32_t dc_offset_filter = 0;
 
 // --- Стан системи ---
-volatile uint8_t alg_mode = 0;       // 1 = Plate, 0 = Hall
+volatile uint8_t alg_mode = 1;       // 1 = Plate, 0 = Hall
 volatile uint8_t shimmer_active = 0; // 1 = Shimmer ON
 
 // --- Plate buffers ---
@@ -89,6 +89,8 @@ static void MX_ADC1_Init(void);
 
 
 void Read_Pots_And_Smooth(void) {
+
+  
   uint32_t raw_decay = adc_values[0]; // Decay
   uint32_t raw_mix   = adc_values[1]; // Mix
   uint32_t raw_tone  = adc_values[2]; // Tone
@@ -112,11 +114,12 @@ void Read_Pots_And_Smooth(void) {
 void Update_Physical_Controls(void) {
     static uint32_t last_check_time = 0;
     if (HAL_GetTick() - last_check_time > 20) {
-        // PA6 - plate/hall, PA7 - shimmer on/off
+        // PA6 - plate/hall, PA5 - shimmer on/off
         alg_mode = LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_6);
+        //alg_mode = 1;
         
         // For some reason shimmer has artifacts when it is activated on HIGH
-        shimmer_active = !LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_7); 
+        shimmer_active = !LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_5); 
         
         last_check_time = HAL_GetTick();
     }
@@ -151,9 +154,11 @@ void Process_Audio_Block(uint32_t start_idx, uint32_t end_idx) {
             wet_out = Hall_Process(&myHall, input_to_reverb, shimmer_active);
         }
 
+    int32_t wet_compensated = (int32_t)wet_out * 3; 
+
     // Mix
     int32_t final_out = (((int32_t)dry_mono * (32767 - current_mix)) >> 15) + 
-                            (((int32_t)wet_out  * current_mix) >> 15);
+                        ((wet_compensated * current_mix) >> 15);
 
     // Limiter
     if (final_out > 32767) final_out = 32767;
@@ -200,9 +205,9 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMAit();
-  MX_ADC1__Init();
-  MX_I2S3_InInit();
+  MX_DMA_Init();
+  MX_I2S3_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   // --- Plate init ---
   for(int i=0; i<4; i++) Delay_Filter_Init(&myPlate.diffuser[i], p_diff_bufs[i], 300-(i*40), 16384);
@@ -496,10 +501,16 @@ static void MX_GPIO_Init(void)
   LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /**/
-  GPIO_InitStruct.Pin = LL_GPIO_PIN_6|LL_GPIO_PIN_7;
+  GPIO_InitStruct.Pin = LL_GPIO_PIN_5|LL_GPIO_PIN_6;
   GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = LL_GPIO_PULL_DOWN;
   LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /**/
+  GPIO_InitStruct.Pin = LL_GPIO_PIN_13;
+  GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+  LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /**/
   GPIO_InitStruct.Pin = LL_GPIO_PIN_8;

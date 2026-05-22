@@ -119,7 +119,7 @@ int16_t Hall_Process(Hall_Reverb *reverb, int16_t input, uint8_t shimmer_on) {
     shimmer_lpf_state = shimmer_lpf_state + (((shim - shimmer_lpf_state) * 4000) >> 15);
 
     if (shimmer_on) {
-        wet = (int16_t)(((int32_t)wet * 16384 >> 15) + ((int32_t)shimmer_lpf_state * 24000 >> 15)); // Mix is determined by ear :)
+        wet = (int16_t)(((int32_t)wet * 16384 >> 15) + ((int32_t)shimmer_lpf_state * 27500 >> 15)); // Mix is determined by ear :)
     }
 
     // Diffusion
